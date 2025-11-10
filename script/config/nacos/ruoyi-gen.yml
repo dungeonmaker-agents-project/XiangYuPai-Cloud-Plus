@@ -12,6 +12,34 @@ spring:
           url: ${datasource.system-master.url}
           username: ${datasource.system-master.username}
           password: ${datasource.system-master.password}
+        chat:
+          type: com.zaxxer.hikari.HikariDataSource
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          # 使用 xypai_chat 数据库（聊天相关表：messages, conversations等）
+          url: ${datasource.xypai-chat-master.url}
+          username: ${datasource.xypai-chat-master.username}
+          password: ${datasource.xypai-chat-master.password}
+        trade:
+          type: com.zaxxer.hikari.HikariDataSource
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          # 使用 xypai_trade 数据库（聊天相关表：messages, conversations等）
+          url: ${datasource.xypai-trade-master.url}
+          username: ${datasource.xypai-trade-master.username}
+          password: ${datasource.xypai-trade-master.password}
+        user:
+          type: com.zaxxer.hikari.HikariDataSource
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          # 使用 xypai_user 数据库（聊天相关表：messages, conversations等）
+          url: ${datasource.xypai-user-master.url}
+          username: ${datasource.xypai-user-master.username}
+          password: ${datasource.xypai-user-master.password}
+        content:
+          type: com.zaxxer.hikari.HikariDataSource
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          # 使用 xypai_content 数据库（聊天相关表：messages, conversations等）
+          url: ${datasource.xypai-content-master.url}
+          username: ${datasource.xypai-content-master.username}
+          password: ${datasource.xypai-content-master.password}
 #        oracle:
 #          type: ${spring.datasource.type}
 #          driverClassName: oracle.jdbc.OracleDriver
