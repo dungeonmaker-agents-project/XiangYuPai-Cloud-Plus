@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+  此文件已弃用，项目使用 logback-plus.xml 配置
+  如需自定义日志配置，请修改 logback-plus.xml
+-->

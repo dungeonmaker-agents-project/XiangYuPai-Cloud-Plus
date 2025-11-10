@@ -1,0 +1,70 @@
+# Tomcat
+server:
+  port: 9401
+
+# Sa-Token 配置
+sa-token:
+  check-same-token: false
+
+# Spring
+spring:
+  application:
+    # 应用名称
+    name: xypai-user
+  profiles:
+    # 环境配置
+    active: @profiles.active@
+
+--- # nacos 配置
+spring:
+  cloud:
+    nacos:
+      # nacos 服务地址
+      server-addr: @nacos.server@
+      username: @nacos.username@
+      password: @nacos.password@
+      discovery:
+        # 注册组
+        group: @nacos.discovery.group@
+        namespace: ${spring.profiles.active}
+      config:
+        # 配置组
+        group: @nacos.config.group@
+        namespace: ${spring.profiles.active}
+  config:
+    import:
+      - optional:nacos:application-common.yml
+      - optional:nacos:datasource.yml
+      # 注释掉Nacos配置，使用本地配置（与ruoyi-demo一致）
+      # - optional:nacos:xypai-user.yml
+
+--- # 数据源配置（本地配置）
+spring:
+  datasource:
+    dynamic:
+      seata: false
+      # 设置默认的数据源或者数据源组,默认值即为 master
+      primary: master
+      datasource:
+        # 主库数据源（使用 xypai_user 数据库）
+        master:
+          type: ${spring.datasource.type}
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          # 使用 xypai_user 数据库，如果不存在则使用 system 数据库
+          url: ${datasource.xypai-user-master.url:${datasource.system-master.url}}
+          username: ${datasource.xypai-user-master.username:${datasource.system-master.username}}
+          password: ${datasource.xypai-user-master.password:${datasource.system-master.password}}
+
+--- # Dubbo配置（本地配置）
+dubbo:
+  application:
+    name: ${spring.application.name}
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    address: nacos://${spring.cloud.nacos.server-addr}
+    group: ${spring.cloud.nacos.discovery.group}
+    parameters:
+      namespace: ${spring.cloud.nacos.discovery.namespace}
+

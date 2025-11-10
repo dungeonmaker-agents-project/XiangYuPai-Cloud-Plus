@@ -1,0 +1,31 @@
+# Test Profile Configuration
+# 
+# ⚠️ 重要说明：
+# 1. Sa-Token 的 Servlet 过滤器在测试环境中被禁用
+#    - 通过 SaTokenConfig 上的 @Profile("!test") 注解实现
+#    - 这样测试时登录接口才能正常访问，不会被 Sa-Token 拦截
+# 
+# 2. Sa-Token 的核心功能（token生成、验证）仍然正常工作
+#    - StpUtil.login() 可以正常生成 token
+#    - StpUtil.getTokenValue() 可以正常获取 token
+#    - 只是不会有 HTTP 请求拦截
+#
+# 3. 适用场景：
+#    - 单元测试：测试业务逻辑
+#    - 集成测试：测试完整的登录流程和 token 生成
+#    - 跨服务测试：测试 Gateway 路由和 Sa-Token 认证
+
+server:
+  port: 0  # Random port for tests
+
+# Sa-Token 配置（测试环境）
+sa-token:
+  # 基础配置
+  check-same-token: false  # 不检查同一账号是否在多处登录
+  is-check: false          # 不进行自动校验
+  
+  # Token 配置（测试用）
+  timeout: 2592000         # Token 有效期：30天（秒）
+  activity-timeout: -1     # Token 临时有效期：-1表示不限制
+  is-concurrent: true      # 允许同一账号并发登录
+  is-share: false          # 不同端的 token 不共享

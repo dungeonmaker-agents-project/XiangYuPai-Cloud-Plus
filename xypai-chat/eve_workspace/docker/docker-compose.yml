@@ -1,0 +1,85 @@
+version: '3.8'
+
+# ==========================================
+# Eve的聊天模块开发环境
+# ==========================================
+# 服务：MySQL 8.0 + Redis 7.0
+# 用途：xypai-chat模块本地开发测试
+# ==========================================
+
+services:
+  # ========== MySQL 8.0 ==========
+  eve-mysql:
+    image: mysql:8.0
+    container_name: eve-mysql-chat
+    restart: unless-stopped
+    ports:
+      - "3307:3306"  # 映射到3307端口（避免冲突）
+    environment:
+      MYSQL_ROOT_PASSWORD: eve_root_password
+      MYSQL_DATABASE: xypai_chat
+      MYSQL_USER: eve_user
+      MYSQL_PASSWORD: eve_password
+      TZ: Asia/Shanghai
+    volumes:
+      - eve-mysql-data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max_connections=200
+      - --innodb_buffer_pool_size=256M
+    networks:
+      - eve-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========== Redis 7.0 ==========
+  eve-redis:
+    image: redis:7.0-alpine
+    container_name: eve-redis-chat
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # 映射到6380端口（避免冲突）
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes:
+      - eve-redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - eve-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+# ========== 数据卷 ==========
+volumes:
+  eve-mysql-data:
+    name: eve-mysql-chat-data
+    driver: local
+  eve-redis-data:
+    name: eve-redis-chat-data
+    driver: local
+
+# ========== 网络 ==========
+networks:
+  eve-network:
+    name: eve-chat-network
+    driver: bridge
+
+# ==========================================
+# 使用说明
+# ==========================================
+# 启动：docker-compose up -d
+# 停止：docker-compose down
+# 查看日志：docker-compose logs -f
+# 重启：docker-compose restart
+# 清理：docker-compose down -v (⚠️ 会删除数据)
+# ==========================================
+

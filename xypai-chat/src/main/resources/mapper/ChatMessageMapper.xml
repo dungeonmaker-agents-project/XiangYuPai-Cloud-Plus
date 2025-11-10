@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xypai.chat.mapper.ChatMessageMapper">
+
+    <!-- ========== v7.1新增：更新会话最后消息 ========== -->
+    <update id="updateConversationLastMessage">
+        UPDATE chat_conversation
+        SET last_message_id = #{messageId},
+            last_message_time = #{messageTime},
+            total_message_count = total_message_count + 1,
+            updated_at = NOW()
+        WHERE id = #{conversationId}
+    </update>
+
+    <!-- ========== 查询会话消息列表（分页） ========== -->
+    <select id="selectConversationMessages" resultType="com.xypai.chat.domain.entity.ChatMessage">
+        SELECT *
+        FROM chat_message
+        WHERE conversation_id = #{conversationId}
+          AND status != 0
+        <if test="baseMessageId != null">
+            <choose>
+                <when test="direction == 'before'">
+                    AND id &lt; #{baseMessageId}
+                </when>
+                <when test="direction == 'after'">
+                    AND id &gt; #{baseMessageId}
+                </when>
+            </choose>
+        </if>
+        ORDER BY sequence_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ========== 查询最新消息 ========== -->
+    <select id="selectLatestMessage" resultType="com.xypai.chat.domain.entity.ChatMessage">
+        SELECT *
+        FROM chat_message
+        WHERE conversation_id = #{conversationId}
+          AND status != 0
+        ORDER BY sequence_id DESC
+        LIMIT 1
+    </select>
+
+    <!-- ========== 统计未读消息数量 ========== -->
+    <select id="countUnreadMessages" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM chat_message
+        WHERE conversation_id = #{conversationId}
+          AND status = 1
+        <if test="lastReadTime != null">
+            AND created_at &gt; #{lastReadTime}
+        </if>
+          AND sender_id != #{userId}
+    </select>
+
+    <!-- ========== 搜索消息 ========== -->
+    <select id="searchMessages" resultType="com.xypai.chat.domain.entity.ChatMessage">
+        SELECT *
+        FROM chat_message
+        WHERE status != 0
+        <if test="conversationId != null">
+            AND conversation_id = #{conversationId}
+        </if>
+        <if test="messageType != null">
+            AND message_type = #{messageType}
+        </if>
+        <if test="senderId != null">
+            AND sender_id = #{senderId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND content LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ========== 查询时间范围内的消息 ========== -->
+    <select id="selectMessagesByTimeRange" resultType="com.xypai.chat.domain.entity.ChatMessage">
+        SELECT *
+        FROM chat_message
+        WHERE conversation_id = #{conversationId}
+          AND status != 0
+        <if test="startTime != null">
+            AND created_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND created_at &lt;= #{endTime}
+        </if>
+        ORDER BY sequence_id DESC
+    </select>
+
+    <!-- ========== 批量更新消息状态 ========== -->
+    <update id="batchUpdateStatus">
+        UPDATE chat_message
+        SET status = #{newStatus}
+        WHERE id IN
+        <foreach collection="messageIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- ========== 删除会话消息 ========== -->
+    <delete id="deleteConversationMessages">
+        UPDATE chat_message
+        SET status = 0, deleted_at = NOW()
+        WHERE conversation_id = #{conversationId}
+    </delete>
+
+    <!-- ========== 查询可撤回消息 ========== -->
+    <select id="selectRecallableMessages" resultType="com.xypai.chat.domain.entity.ChatMessage">
+        SELECT *
+        FROM chat_message
+        WHERE sender_id = #{senderId}
+          AND status = 1
+          AND created_at &gt; DATE_SUB(NOW(), INTERVAL #{minutes} MINUTE)
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- ========== 查询消息统计 ========== -->
+    <select id="selectMessageStats" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) as total_count,
+            SUM(CASE WHEN message_type = 1 THEN 1 ELSE 0 END) as text_count,
+            SUM(CASE WHEN message_type = 2 THEN 1 ELSE 0 END) as image_count,
+            SUM(CASE WHEN message_type = 3 THEN 1 ELSE 0 END) as voice_count,
+            SUM(CASE WHEN message_type = 4 THEN 1 ELSE 0 END) as video_count,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) as recalled_count
+        FROM chat_message
+        WHERE conversation_id = #{conversationId}
+        <if test="startTime != null">
+            AND created_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND created_at &lt;= #{endTime}
+        </if>
+    </select>
+
+    <!-- ========== 查询用户消息统计 ========== -->
+    <select id="selectUserMessageStats" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) as total_sent,
+            SUM(CASE WHEN message_type = 1 THEN 1 ELSE 0 END) as text_sent,
+            SUM(CASE WHEN message_type = 2 THEN 1 ELSE 0 END) as image_sent,
+            SUM(CASE WHEN message_type = 3 THEN 1 ELSE 0 END) as voice_sent,
+            SUM(CASE WHEN message_type = 4 THEN 1 ELSE 0 END) as video_sent
+        FROM chat_message
+        WHERE sender_id = #{userId}
+          AND status != 0
+        <if test="startTime != null">
+            AND created_at &gt;= #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND created_at &lt;= #{endTime}
+        </if>
+    </select>
+
+    <!-- ========== 查询热门表情 ========== -->
+    <select id="selectPopularEmojis" resultType="java.util.Map">
+        SELECT 
+            content as emoji,
+            COUNT(*) as use_count
+        FROM chat_message
+        WHERE message_type = 7
+          AND created_at &gt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+          AND status = 1
+        GROUP BY content
+        ORDER BY use_count DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ========== 查询过期消息 ========== -->
+    <select id="selectExpiredMessages" resultType="java.lang.Long">
+        SELECT id
+        FROM chat_message
+        WHERE created_at &lt; DATE_SUB(NOW(), INTERVAL #{days} DAY)
+          AND status = 0
+        LIMIT #{batchSize}
+    </select>
+
+    <!-- ========== 查询回复消息 ========== -->
+    <select id="selectReplyMessages" resultType="com.xypai.chat.domain.entity.ChatMessage">
+        SELECT *
+        FROM chat_message
+        WHERE reply_to_id = #{replyToId}
+          AND status != 0
+        ORDER BY created_at ASC
+    </select>
+
+    <!-- ========== 查询媒体消息 ========== -->
+    <select id="selectMediaMessages" resultType="com.xypai.chat.domain.entity.ChatMessage">
+        SELECT *
+        FROM chat_message
+        WHERE conversation_id = #{conversationId}
+          AND status = 1
+        <if test="messageType != null">
+            AND message_type = #{messageType}
+        </if>
+        <if test="messageType == null">
+            AND message_type IN (2, 3, 4, 5)
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ========== 更新消息已读状态 ========== -->
+    <update id="updateMessageReadStatus">
+        UPDATE chat_message
+        SET read_count = read_count + 1,
+            delivery_status = CASE 
+                WHEN delivery_status &lt; 3 THEN 3 
+                ELSE delivery_status 
+            END
+        WHERE id = #{messageId}
+    </update>
+
+    <!-- ========== 查询消息已读用户 ========== -->
+    <select id="selectMessageReadUsers" resultType="java.util.Map">
+        SELECT 
+            p.user_id,
+            p.nickname,
+            p.last_read_time as read_at
+        FROM chat_participant p
+        WHERE p.conversation_id = (
+            SELECT conversation_id FROM chat_message WHERE id = #{messageId}
+        )
+        AND p.status = 1
+        ORDER BY p.last_read_time DESC
+    </select>
+
+</mapper>
+

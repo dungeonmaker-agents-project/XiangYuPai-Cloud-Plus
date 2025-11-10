@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xypai.trade.mapper.ServiceReviewMapper">
+
+    <!-- 根据订单ID查询评价 -->
+    <select id="selectByOrderId" resultType="com.xypai.trade.domain.entity.ServiceReview">
+        SELECT * FROM service_review
+        WHERE order_id = #{orderId}
+        LIMIT 1
+    </select>
+
+    <!-- 查询内容的评价统计 -->
+    <select id="selectContentReviewStats" resultType="map">
+        SELECT
+            COUNT(*) AS total_reviews,
+            AVG(rating_overall) AS avg_rating,
+            SUM(CASE WHEN rating_overall >= 4.5 THEN 1 ELSE 0 END) AS good_reviews,
+            ROUND(SUM(CASE WHEN rating_overall >= 4.5 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS good_rate,
+            AVG(rating_service) AS avg_service_rating,
+            AVG(rating_attitude) AS avg_attitude_rating,
+            AVG(rating_quality) AS avg_quality_rating,
+            SUM(CASE WHEN review_images IS NOT NULL AND review_images != '' THEN 1 ELSE 0 END) AS image_reviews,
+            SUM(CASE WHEN reply_text IS NOT NULL AND reply_text != '' THEN 1 ELSE 0 END) AS replied_reviews,
+            MAX(created_at) AS latest_review_time
+        FROM service_review
+        WHERE content_id = #{contentId} AND status = 1
+    </select>
+
+    <!-- 查询用户收到的评价统计 -->
+    <select id="selectUserReviewStats" resultType="map">
+        SELECT
+            COUNT(*) AS total_reviews,
+            AVG(rating_overall) AS avg_rating,
+            SUM(CASE WHEN rating_overall >= 4.5 THEN 1 ELSE 0 END) AS good_reviews,
+            ROUND(SUM(CASE WHEN rating_overall >= 4.5 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS good_rate,
+            SUM(CASE WHEN rating_overall <![CDATA[<]]> 3.5 THEN 1 ELSE 0 END) AS bad_reviews,
+            MAX(created_at) AS latest_review_time
+        FROM service_review
+        WHERE reviewee_id = #{revieweeId} AND status = 1
+    </select>
+
+    <!-- 查询好评率 -->
+    <select id="selectGoodRate" resultType="java.math.BigDecimal">
+        SELECT
+            ROUND(SUM(CASE WHEN rating_overall >= 4.5 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2)
+        FROM service_review
+        WHERE content_id = #{contentId} AND status = 1
+    </select>
+
+    <!-- 查询评分分布 -->
+    <select id="selectRatingDistribution" resultType="map">
+        SELECT
+            '5星' AS rating_level,
+            SUM(CASE WHEN rating_overall >= 4.5 THEN 1 ELSE 0 END) AS count,
+            ROUND(SUM(CASE WHEN rating_overall >= 4.5 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS percentage
+        FROM service_review
+        WHERE content_id = #{contentId} AND status = 1
+        UNION ALL
+        SELECT
+            '4星' AS rating_level,
+            SUM(CASE WHEN rating_overall >= 3.5 AND rating_overall <![CDATA[<]]> 4.5 THEN 1 ELSE 0 END),
+            ROUND(SUM(CASE WHEN rating_overall >= 3.5 AND rating_overall <![CDATA[<]]> 4.5 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2)
+        FROM service_review
+        WHERE content_id = #{contentId} AND status = 1
+        UNION ALL
+        SELECT
+            '1-3星' AS rating_level,
+            SUM(CASE WHEN rating_overall <![CDATA[<]]> 3.5 THEN 1 ELSE 0 END),
+            ROUND(SUM(CASE WHEN rating_overall <![CDATA[<]]> 3.5 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2)
+        FROM service_review
+        WHERE content_id = #{contentId} AND status = 1
+    </select>
+
+    <!-- 增加点赞数 -->
+    <update id="incrementLikeCount">
+        UPDATE service_review
+        SET like_count = like_count + 1,
+            updated_at = NOW()
+        WHERE id = #{reviewId}
+    </update>
+
+    <!-- 减少点赞数 -->
+    <update id="decrementLikeCount">
+        UPDATE service_review
+        SET like_count = CASE WHEN like_count > 0 THEN like_count - 1 ELSE 0 END,
+            updated_at = NOW()
+        WHERE id = #{reviewId}
+    </update>
+
+</mapper>
+
