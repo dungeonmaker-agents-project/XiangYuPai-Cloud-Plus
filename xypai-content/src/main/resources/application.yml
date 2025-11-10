@@ -2,10 +2,6 @@
 server:
   port: 9403
 
-# Sa-Token 配置
-sa-token:
-  check-same-token: false
-
 # Spring
 spring:
   application:
@@ -35,5 +31,4 @@ spring:
     import:
       - optional:nacos:application-common.yml
       - optional:nacos:datasource.yml
-      - optional:nacos:xypai-content.yml
-
+      - optional:nacos:${spring.application.name}.yml

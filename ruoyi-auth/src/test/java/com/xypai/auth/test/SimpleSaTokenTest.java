@@ -1,264 +1,381 @@
 package com.xypai.auth.test;
 
-import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.dromara.system.api.model.LoginUser;
-import org.dromara.common.satoken.utils.LoginHelper;
-import org.dromara.system.domain.SysUser;
-import org.dromara.system.mapper.SysUserMapper;
+import org.dromara.common.encrypt.utils.EncryptUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Order;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.http.*;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Sa-Token 集成测试 - 演示分布式Token生成模式
+ * Sa-Token 集成测试 - 通过Gateway调用真实登录接口
  *
  * 🎯 核心目标：
- * 本测试演示如何在任意微服务中直接生成Token，无需依赖Auth Service的HTTP接口。
- * 这是一种分布式Token生成模式，适用于微服务架构中的任何模块。
+ * 本测试作为HTTP客户端，通过Gateway调用真实运行的ruoyi-auth服务的登录接口。
+ * 模拟真实的APP前端登录场景，验证整个认证链路的可用性。
  *
  * 测试流程:
- * 1. 🔥 两种Token生成方式（可选其一）:
- *    - 方式A: 调用IAuthService.loginWithPassword() - 标准业务流程
- *    - 方式B: 直接使用LoginHelper.login() - 分布式Token生成 ⭐ 推荐
+ * 1. 🔥 通过Gateway调用 POST /auth/login 接口登录（真实HTTP请求）
  * 2. 验证Token格式（JWT标准）
- * 3. 使用自生成Token访问RuoYi-Demo Service（集成测试）
- * 4. 使用自生成Token访问XYPai-Content Service（集成测试）
- * 5. 使用自生成Token访问RuoYi-System Service（集成测试）
+ * 3. 使用Token通过Gateway访问RuoYi-Demo Service（集成测试）
+ * 4. 使用Token通过Gateway访问XYPai-Content Service（集成测试）
+ * 5. 使用Token通过Gateway访问RuoYi-System Service（集成测试）
  *
- * 🚀 分布式Token生成模式（方式B - 推荐）:
+ * 🚀 真实HTTP登录流程:
  * ┌──────────────────────────────────────────────────────────┐
- * │  任意微服务 (Content/User/Trade/Chat/System等)          │
+ * │  测试客户端 (模拟APP前端)                                 │
  * │  ↓                                                        │
- * │  1. 查询用户信息 (SysUserMapper.selectUserByUserName)   │
- * │  2. 构建LoginUser对象                                    │
- * │  3. 调用 LoginHelper.login(loginUser)  ← 核心！         │
- * │  4. 获取Token: StpUtil.getTokenValue()                   │
- * │  ✅ 完成！无需调用Auth Service的HTTP接口                 │
+ * │  POST http://localhost:8080/auth/login                   │
+ * │  {                                                        │
+ * │    "username": "13900000001",                            │
+ * │    "password": "123456",                                 │
+ * │    "clientId": "app-xypai-client-id",                    │
+ * │    "grantType": "password",                              │
+ * │    "tenantId": "000000"                                  │
+ * │  }                                                        │
+ * │  ↓                                                        │
+ * │  Gateway (8080) 路由到 ruoyi-auth (9210)                 │
+ * │  ↓                                                        │
+ * │  TokenController.login()                                 │
+ * │  ↓                                                        │
+ * │  PasswordAuthStrategy.login()                            │
+ * │  ↓                                                        │
+ * │  返回 { access_token, expires_in }                       │
+ * │  ✅ 完成！客户端保存Token并使用                           │
  * └──────────────────────────────────────────────────────────┘
  *
- * 💡 为什么可以这样做？
- * - LoginHelper在ruoyi-common-satoken中，所有微服务都依赖它
- * - Sa-Token使用共享Redis存储，所有服务都能访问同一Token
- * - Token验证无需中心化服务，每个服务都可独立生成和验证
+ * 💡 测试方式说明：
+ * - 这是纯粹的集成测试，不启动任何服务
+ * - 测试类只是HTTP客户端，调用外部服务
+ * - 需要手动启动：Gateway + ruoyi-auth + 各业务服务
+ * - 完全模拟真实的APP前端调用场景
  *
- * 🎯 使用场景：
- * - ✅ 定时任务需要调用需认证的API
- * - ✅ 内部服务间调用需要用户身份
- * - ✅ 测试环境快速生成Token
- * - ✅ 第三方集成需要模拟用户登录
- * - ✅ 微服务独立部署时的灵活性
+ * 🎯 测试场景：
+ * - ✅ 测试真实的Gateway路由
+ * - ✅ 验证ruoyi-auth服务的登录接口
+ * - ✅ 验证APP用户可以成功登录
+ * - ✅ 验证Token可以访问各个微服务
+ * - ✅ 演示APP前端如何调用登录接口
  *
  * 测试优势:
- * - ✅ 无需启动Auth Service（阶段1-2）
- * - ✅ 演示真实的分布式Token生成场景
- * - ✅ 验证Token在各服务间的通用性
- * - ✅ 更快的单元测试速度
- * - ✅ 更容易理解Token机制
+ * - ✅ 100%真实场景，不启动测试服务
+ * - ✅ 验证完整的Gateway路由链路
+ * - ✅ 测试实际运行的服务
+ * - ✅ 确保APP前端可以正常对接
+ * - ✅ 发现Gateway配置问题
  *
  * 测试模块:
- * - Token生成: LoginHelper.login() 或 IAuthService.loginWithPassword()
- * - ruoyi-example/ruoyi-demo: GET /cache/test1 (Redis缓存测试)
- * - xypai-content: GET /api/v1/homepage/users/list (首页用户列表)
- * - ruoyi-modules/ruoyi-system: GET /menu/getRouters (获取路由信息)
+ * - 登录接口: POST /auth/login (通过Gateway)
+ * - ruoyi-example/ruoyi-demo: GET /demo/cache/test1 (Redis缓存测试)
+ * - xypai-content: GET /xypai-content/api/v1/homepage/users/list (首页用户列表)
+ * - ruoyi-modules/ruoyi-system: GET /system/menu/getRouters (获取路由信息)
  *
  * @author xypai
  * @date 2025-11-10
  */
 @Slf4j
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SimpleSaTokenTest {
 
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public RestTemplate restTemplate() {
-            return new RestTemplate();
-        }
-    }
-
-    @LocalServerPort
-    private int port;
-    
-    @Autowired
-    private TestRestTemplate testRestTemplate;
-    
-    @Autowired
-    private RestTemplate restTemplate;
-    
-    // 直接注入用户Mapper（用于演示分布式Token生成）
-    @Autowired
-    private SysUserMapper sysUserMapper;
-
     // 测试配置（使用RuoYi标准认证 + APP用户）
-    private static final String TEST_PHONENUMBER = "13900000001";  // APP用户手机号
+    private static final String TEST_PHONENUMBER = "testjojo";  // APP用户手机号
     private static final String TEST_PASSWORD = "123456";          // APP用户密码
-    private static final String TEST_CLIENT_ID = "app-xypai-client-id";  // APP端clientId
-    private static final String GATEWAY_URL = "http://localhost:8080";
+    private static final String TEST_CLIENT_ID = "428a8310cd442757ae699df5d894f051";  // APP端clientId（数据库中已存在）
+    private static final String GATEWAY_URL = "http://localhost:8080";   // Gateway地址
     
-    // ⚠️ 测试说明：
-    // 阶段1-2: 单元测试（只需要Redis，不需要Gateway和Auth Service）
-    // 阶段3: 集成测试（需要Gateway 8080 和 RuoYi-Demo Service 9401运行）
-    // 阶段4: 集成测试（需要Gateway 8080 和 XYPai-Content Service 9403运行）
-    // 阶段5: 集成测试（需要Gateway 8080 和 RuoYi-System Service 9201运行）
+    // 加密配置（从Nacos配置中获取）
+    private static final String RSA_PUBLIC_KEY = "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ==";
+    private static final String ENCRYPT_HEADER_FLAG = "encrypt-key";
+    
+    // RestTemplate 用于HTTP请求
+    private static RestTemplate restTemplate;
+    
+    // ObjectMapper 用于JSON序列化
+    private static ObjectMapper objectMapper;
+    
+    // ⚠️ 前置条件：需要手动启动以下服务
+    // ✅ Gateway服务 (端口 8080) - 必需
+    // ✅ ruoyi-auth服务 (端口 9210) - 必需
+    // ✅ Redis (端口 6379) - 必需
+    // ✅ 数据库 - 必需
+    // ⚠️ RuoYi-Demo Service (端口 9401) - 阶段3需要
+    // ⚠️ XYPai-Content Service (端口 9403) - 阶段4需要
+    // ⚠️ RuoYi-System Service (端口 9201) - 阶段5需要
 
     // 全局 token (从登录获取)
     private static String globalToken = null;
+    
+    @BeforeAll
+    static void setup() {
+        restTemplate = new RestTemplate();
+        objectMapper = new ObjectMapper();
+        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log.info("  🚀 Sa-Token 集成测试 - 真实服务调用模式（加密请求）");
+        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log.info("⚠️  请确保以下服务已启动：");
+        log.info("   1. Gateway服务 (8080)");
+        log.info("   2. ruoyi-auth服务 (9210)");
+        log.info("   3. Redis (6379)");
+        log.info("   4. 数据库");
+        log.info("   5. RuoYi-Demo (9401) - 可选");
+        log.info("   6. XYPai-Content (9403) - 可选");
+        log.info("   7. RuoYi-System (9201) - 可选");
+        log.info("");
+        log.info("🔐 加密配置：");
+        log.info("   • RSA 公钥（前40字符）: {}...", RSA_PUBLIC_KEY.substring(0, 40));
+        log.info("   • 加密 Header: {}", ENCRYPT_HEADER_FLAG);
+        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+    }
+    
+    /**
+     * 加密请求体（模拟前端加密逻辑）
+     * 
+     * 加密流程：
+     * 1. 生成32位随机AES密钥
+     * 2. Base64编码AES密钥
+     * 3. 用RSA公钥加密Base64编码后的AES密钥
+     * 4. 用AES密钥加密请求体JSON
+     * 5. 返回加密后的内容和加密header
+     * 
+     * @param requestBody 请求体对象
+     * @return Map包含加密后的body和header值
+     */
+    private static Map<String, String> encryptRequest(Object requestBody) throws Exception {
+        // 1. 将请求体转换为JSON字符串
+        String jsonBody = objectMapper.writeValueAsString(requestBody);
+        
+        // 2. 生成32位随机AES密钥
+        String aesPassword = RandomUtil.randomString(32);
+        log.debug("🔑 生成AES密钥: {}", aesPassword);
+        
+        // 3. Base64编码AES密钥
+        String encryptAes = EncryptUtils.encryptByBase64(aesPassword);
+        log.debug("📦 Base64编码AES: {}", encryptAes);
+        
+        // 4. 用RSA公钥加密Base64编码后的AES密钥
+        String encryptedPassword = EncryptUtils.encryptByRsa(encryptAes, RSA_PUBLIC_KEY);
+        log.debug("🔐 RSA加密后密钥（前50字符）: {}...", encryptedPassword.substring(0, Math.min(50, encryptedPassword.length())));
+        
+        // 5. 用AES密钥加密请求体JSON
+        String encryptedBody = EncryptUtils.encryptByAes(jsonBody, aesPassword);
+        log.debug("📦 AES加密后body（前50字符）: {}...", encryptedBody.substring(0, Math.min(50, encryptedBody.length())));
+        
+        // 6. 返回结果
+        Map<String, String> result = new HashMap<>();
+        result.put("body", encryptedBody);           // 加密后的请求体
+        result.put("header", encryptedPassword);      // 加密后的AES密钥（放在header中）
+        
+        return result;
+    }
 
     /**
-     * 🎯 完整测试：APP用户登录 → 生成Token → Gateway访问多个服务
+     * 🎯 完整测试：APP用户通过Gateway登录 → 获取Token → 访问多个服务
      *
      * 测试阶段：
-     * 1. ✅ 使用LoginHelper直接生成Token（模拟APP登录）
-     * 2. ✅ 验证Token格式和Sa-Token登录状态
+     * 1. ✅ 通过Gateway调用 POST /auth/login 接口登录（真实Gateway路由）
+     * 2. ✅ 验证Token格式和有效性
      * 3. ⚠️ 使用Token通过Gateway访问RuoYi-Demo Service
      * 4. ⚠️ 使用Token通过Gateway访问XYPai-Content Service
      * 5. ⚠️ 使用Token通过Gateway访问RuoYi-System Service
      *
-     * ⚠️ 前置条件：
-     * - 阶段1-2（单元测试）：
+     * ⚠️ 前置条件（必须手动启动）：
+     * - 阶段1-2（登录测试）：
+     *   ✅ Gateway服务运行中 (8080) - 必需
+     *   ✅ ruoyi-auth 服务运行中 (9210) - 必需
      *   ✅ Redis运行中 (6379) - 必需
      *   ✅ 数据库可用 - 必需
      *   ✅ APP用户存在 (手机号: 13900000001)
-     *   ❌ Gateway不需要
-     *   ❌ Auth Service不需要
+     *   ✅ APP客户端已配置 (clientId: app-xypai-client-id)
      *
      * - 阶段3-5（集成测试）：
-     *   ⚠️ Gateway服务运行中 (8080) - 可选
-     *   ⚠️ RuoYi-Demo Service运行中 (9401) - 可选
-     *   ⚠️ XYPai-Content Service运行中 (9403) - 可选
-     *   ⚠️ RuoYi-System Service运行中 (9201) - 可选
+     *   ⚠️ RuoYi-Demo Service运行中 (9401) - 阶段3需要
+     *   ⚠️ XYPai-Content Service运行中 (9403) - 阶段4需要
+     *   ⚠️ RuoYi-System Service运行中 (9201) - 阶段5需要
      *
-     * 🚀 APP用户Token生成流程：
-     * 1. 根据手机号查询用户: sysUserMapper.selectUserByPhonenumber()
-     * 2. 构建LoginUser对象（包含用户ID、部门ID、租户ID等）
-     * 3. 直接调用: LoginHelper.login(loginUser)
-     * 4. 获取Token: StpUtil.getTokenValue()
-     * 5. ✅ 完成！此Token可用于访问所有微服务
+     * 🚀 APP用户Token生成流程（真实Gateway调用）：
+     * 1. 构造登录请求体（手机号 + 密码 + clientId）
+     * 2. POST 请求: http://localhost:8080/auth/login
+     * 3. Gateway 路由到 ruoyi-auth (9210)
+     * 4. TokenController 处理登录
+     * 5. 返回 Token (access_token)
+     * 6. ✅ 使用此Token访问所有微服务
      *
      * 💡 核心优势：
-     * - 演示真实的APP用户登录场景
-     * - 使用手机号登录（符合APP习惯）
-     * - Token可以访问所有微服务
-     * - 统一使用RuoYi-Auth的认证体系
+     * - 测试真实的Gateway路由
+     * - 验证完整的认证链路
+     * - 完全模拟APP前端调用方式
+     * - 发现Gateway配置问题
      */
     @Test
     @Order(1)
-    @DisplayName("APP用户登录测试: 手机号登录 → Token生成 → Gateway访问")
+    @DisplayName("APP用户登录测试: Gateway → ruoyi-auth → Token → 访问服务")
     public void testCompleteAuthFlow() {
         String token = null;
         
         try {
             // ============================================
-            // 🔐 阶段1：APP用户通过手机号生成Token
+            // 🔐 阶段1：通过Gateway调用登录接口
             // ============================================
             log.info("\n");
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-            log.info("  📱 阶段1: APP用户通过手机号生成Token");
-            log.info("  📍 查询用户(手机号) → 构建LoginUser → LoginHelper.login()");
+            log.info("  📱 阶段1: 通过Gateway调用登录接口");
+            log.info("  📍 Gateway → ruoyi-auth → TokenController");
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-            log.info("\n📝 步骤1: 根据手机号查询用户信息");
-            log.info("   手机号: {}", TEST_PHONENUMBER);
-            log.info("   密码: {}", TEST_PASSWORD);
+            log.info("\n📝 步骤1: 获取验证码配置");
+            log.info("   接口: GET {}/auth/code", GATEWAY_URL);
             
-            // 1. 根据手机号查询用户信息
-            SysUser sysUser = sysUserMapper.selectUserByPhonenumber(TEST_PHONENUMBER);
-            if (sysUser == null) {
-                throw new RuntimeException("用户不存在，手机号: " + TEST_PHONENUMBER);
+            // 1. 先调用 /auth/code 接口，获取验证码配置
+            String captchaUrl = GATEWAY_URL + "/auth/code";
+            ResponseEntity<Map> captchaResponse = restTemplate.getForEntity(captchaUrl, Map.class);
+            
+            String uuid = null;
+            boolean captchaEnabled = false;
+            
+            if (captchaResponse.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> captchaBody = captchaResponse.getBody();
+                if (captchaBody != null && (Integer) captchaBody.get("code") == 200) {
+                    Map<String, Object> captchaData = (Map<String, Object>) captchaBody.get("data");
+                    if (captchaData != null) {
+                        uuid = (String) captchaData.get("uuid");
+                        Object captchaEnabledObj = captchaData.get("captchaEnabled");
+                        captchaEnabled = captchaEnabledObj != null && (Boolean) captchaEnabledObj;
+                        
+                        log.info("   ✅ 验证码配置获取成功");
+                        log.info("   • 验证码开关: {}", captchaEnabled ? "启用" : "关闭");
+                        if (uuid != null) {
+                            log.info("   • UUID: {}", uuid);
+                        }
+                    }
+                }
             }
             
-            log.info("   ✅ 找到用户:");
-            log.info("      userId: {}", sysUser.getUserId());
-            log.info("      userName: {}", sysUser.getUserName());
-            log.info("      nickName: {}", sysUser.getNickName());
-            log.info("      phonenumber: {}", sysUser.getPhonenumber());
-            log.info("      deptId: {}", sysUser.getDeptId());
-
-            // 2. 构建LoginUser对象
-            log.info("\n📝 步骤2: 构建LoginUser对象");
-            LoginUser loginUser = new LoginUser();
-            loginUser.setUserId(sysUser.getUserId());
-            loginUser.setUsername(sysUser.getUserName());
-            loginUser.setUserType(sysUser.getUserType());
-            loginUser.setDeptId(sysUser.getDeptId());
-            loginUser.setDeptName(sysUser.getDept() != null ? sysUser.getDept().getDeptName() : null);
-            loginUser.setTenantId(sysUser.getTenantId());
+            log.info("\n📝 步骤2: 构造登录请求");
+            log.info("   接口: POST {}/auth/login", GATEWAY_URL);
+            log.info("   手机号: {}", TEST_PHONENUMBER);
+            log.info("   密码: {}", TEST_PASSWORD);
+            log.info("   clientId: {}", TEST_CLIENT_ID);
             
-            log.info("   ✅ LoginUser构建完成:");
-            log.info("      userId: {}", loginUser.getUserId());
-            log.info("      username: {}", loginUser.getUsername());
-            log.info("      deptId: {}", loginUser.getDeptId());
-            log.info("      tenantId: {}", loginUser.getTenantId());
-
-            // 3. 🔥 直接调用LoginHelper生成Token（核心！）
-            log.info("\n📝 步骤3: 调用LoginHelper.login()生成Token");
-            log.info("   🔥 模拟APP用户登录，直接生成Token");
-            log.info("   💡 这就是RuoYi-Auth的核心认证机制");
+            // 2. 构造登录请求体
+            Map<String, String> loginRequest = new HashMap<>();
+            loginRequest.put("username", TEST_PHONENUMBER);  // 用户名（这里用手机号）
+            loginRequest.put("password", TEST_PASSWORD);     // 密码
+            loginRequest.put("clientId", TEST_CLIENT_ID);    // APP客户端ID
+            loginRequest.put("grantType", "password");       // 登录方式：密码登录
+            loginRequest.put("tenantId", "000000");         // 租户ID
             
-            LoginHelper.login(loginUser);
+            // 如果验证码启用，添加验证码信息（uuid必须传，code留空表示不验证）
+            if (captchaEnabled && uuid != null) {
+                loginRequest.put("uuid", uuid);
+                loginRequest.put("code", "");  // 验证码留空（需要在Nacos配置中关闭验证码验证）
+                log.info("   ⚠️  验证码已启用但code留空（需配置security.captcha.enabled: false）");
+            }
             
-            // 4. 获取生成的Token
-            token = StpUtil.getTokenValue();
+            log.info("\n🔐 步骤3: 加密请求体（模拟前端加密）");
+            // 3. 加密请求体
+            Map<String, String> encryptResult = encryptRequest(loginRequest);
+            String encryptedBody = encryptResult.get("body");
+            String encryptedHeader = encryptResult.get("header");
             
-            log.info("\n📥 Token生成成功:");
-            log.info("   AccessToken (前50字符): {}...", 
-                token.substring(0, Math.min(50, token.length())));
-            log.info("   Token存储位置: Redis (satoken:login:token:{})", loginUser.getUserId());
-            log.info("   ✅ APP用户可以使用此Token访问所有微服务");
-            log.info("   ✅ 与PC管理后台用户使用同一套认证体系");
-
+            log.info("   ✅ 加密完成");
+            log.info("   • 加密body（前50字符）: {}...", encryptedBody.substring(0, Math.min(50, encryptedBody.length())));
+            log.info("   • 加密header（前50字符）: {}...", encryptedHeader.substring(0, Math.min(50, encryptedHeader.length())));
             
-            log.info("\n✅ 阶段1完成 - APP用户Token生成成功！");
+            // 4. 构造请求头并发送登录请求
+            log.info("\n📤 步骤4: 发送加密请求到Gateway");
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set(ENCRYPT_HEADER_FLAG, encryptedHeader);  // ⭐ 设置加密header
+            
+            HttpEntity<String> request = new HttpEntity<>(encryptedBody, headers);
+            log.info("   URL: {}/auth/login", GATEWAY_URL);
+            log.info("   Header[{}]: {}...", ENCRYPT_HEADER_FLAG, encryptedHeader.substring(0, Math.min(30, encryptedHeader.length())));
+            
+            // 4.1 🔥 通过Gateway调用登录接口（核心！）
+            String loginUrl = GATEWAY_URL + "/auth/login";
+            try {
+                ResponseEntity<Map> response = restTemplate.postForEntity(
+                    loginUrl,
+                    request,
+                    Map.class
+                );
+                
+                log.info("\n📥 收到Gateway响应:");
+                log.info("   HTTP状态码: {} {}", response.getStatusCode().value(), response.getStatusCode());
+                log.info("   响应体: {}", response.getBody());
+                
+                // 5. 解析响应获取Token
+                if (response.getStatusCode().is2xxSuccessful()) {
+                    Map<String, Object> responseBody = response.getBody();
+                    Integer code = (Integer) responseBody.get("code");
+                    
+                    if (code != null && code == 200) {
+                        // 获取data中的access_token
+                        Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
+                        token = (String) data.get("access_token");
+                        Object expiresIn = data.get("expires_in");
+                        
+                        log.info("\n✅ 登录成功！");
+                        log.info("   AccessToken (前50字符): {}...", 
+                            token.substring(0, Math.min(50, token.length())));
+                        log.info("   Token长度: {} 字符", token.length());
+                        log.info("   过期时间: {} 秒", expiresIn);
+                        log.info("   Token格式: {}", token.split("\\.").length == 3 ? "JWT (3部分)" : "其他");
+                        log.info("   ✅ 此Token可用于访问所有微服务");
+                    } else {
+                        String msg = (String) responseBody.get("msg");
+                        throw new RuntimeException("登录失败: " + msg);
+                    }
+                } else {
+                    throw new RuntimeException("HTTP请求失败: " + response.getStatusCode());
+                }
+                
+            } catch (Exception e) {
+                log.error("\n❌ 登录请求失败: {}", e.getMessage());
+                log.error("   可能原因:");
+                log.error("   1. Gateway 服务未启动（端口 8080）");
+                log.error("   2. ruoyi-auth 服务未启动（端口 9210）");
+                log.error("   3. Gateway路由配置错误 (/auth/** -> ruoyi-auth)");
+                log.error("   4. 数据库连接失败");
+                log.error("   5. Redis连接失败");
+                log.error("   6. 用户不存在或密码错误");
+                log.error("   7. 客户端ID配置错误");
+                throw new RuntimeException("Gateway登录测试失败", e);
+            }
+            
+            log.info("\n✅ 阶段1完成 - 通过Gateway登录成功！");
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             log.info("📋 Token 信息:");
-            log.info("   登录方式: 手机号登录 ({})", TEST_PHONENUMBER);
-            log.info("   生成方式: LoginHelper（RuoYi标准） ⭐");
+            log.info("   登录方式: Gateway HTTP路由");
+            log.info("   Gateway地址: {}/auth/login", GATEWAY_URL);
+            log.info("   Auth服务: ruoyi-auth (9210)");
+            log.info("   用户标识: {} (手机号)", TEST_PHONENUMBER);
+            log.info("   客户端ID: {}", TEST_CLIENT_ID);
+            log.info("   认证类型: password (密码登录)");
+            log.info("   生成方式: Gateway → TokenController → PasswordAuthStrategy ⭐");
             log.info("   AccessToken (前50字符): {}...", 
                 token.substring(0, Math.min(50, token.length())));
             log.info("   Token 长度: {} 字符", token.length());
             log.info("   Token 格式: {}", token.split("\\.").length == 3 ? "JWT (3部分)" : "其他");
             
-            // 解析JWT payload
-            try {
-                String[] parts = token.split("\\.");
-                if (parts.length == 3) {
-                    String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
-                    log.info("   JWT Payload: {}", payload);
-                }
-            } catch (Exception e) {
-                log.warn("   无法解析JWT Payload: {}", e.getMessage());
-            }
-            
-            // 验证Token已存储到Redis
-            boolean isLogin = StpUtil.isLogin();
-            log.info("   Sa-Token登录状态: {}", isLogin ? "✅ 已登录" : "❌ 未登录");
-            
-            log.info("\n🎯 APP用户Token生成完成！");
+            log.info("\n🎯 Gateway登录测试完成！");
             log.info("   💡 关键点:");
-            log.info("   1. 使用RuoYi-Auth的标准认证机制");
-            log.info("   2. 通过手机号登录（符合APP习惯）");
-            log.info("   3. Token存储在共享Redis中");
-            log.info("   4. 此Token可以访问所有微服务");
-            log.info("   5. 与PC管理后台使用同一套认证体系");
+            log.info("   1. ✅ Gateway正确路由 /auth/login 到 ruoyi-auth");
+            log.info("   2. ✅ TokenController.login() 处理请求");
+            log.info("   3. ✅ PasswordAuthStrategy 验证用户");
+            log.info("   4. ✅ 支持手机号作为用户名登录");
+            log.info("   5. ✅ 通过clientId区分APP和PC客户端");
+            log.info("   6. ✅ 完全模拟真实APP前端调用");
+            log.info("   7. ✅ 这就是APP前端要调用的方式！");
             
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
@@ -521,107 +638,128 @@ public class SimpleSaTokenTest {
             // ============================================
             // ✅ 测试成功总结
             // ============================================
-            log.info("\n✅✅✅ APP用户登录测试完成！✅✅✅");
+            log.info("\n✅✅✅ APP用户HTTP登录测试完成！✅✅✅");
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             log.info("📊 完整测试结果:");
-            log.info("   ✅ 阶段1: APP用户Token生成成功 (手机号: {})", TEST_PHONENUMBER);
+            log.info("   ✅ 阶段1: HTTP接口登录成功 (手机号: {})", TEST_PHONENUMBER);
             log.info("   ✅ 阶段2: JWT Token验证成功");
             log.info("   ℹ️  阶段3: Token → Gateway → RuoYi-Demo");
             log.info("   ℹ️  阶段4: Token → Gateway → XYPai-Content");
             log.info("   ℹ️  阶段5: Token → Gateway → RuoYi-System");
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             
-            log.info("\n🚀 RuoYi-Auth APP用户认证验证:");
-            log.info("   ✅ 根据手机号查询用户: sysUserMapper.selectUserByPhonenumber()");
-            log.info("   ✅ 构建LoginUser对象");
-            log.info("   ✅ 调用LoginHelper.login(loginUser)");
-            log.info("   ✅ 获取Token: StpUtil.getTokenValue()");
+            log.info("\n🚀 Gateway HTTP登录流程验证:");
+            log.info("   ✅ POST {}/auth/login", GATEWAY_URL);
+            log.info("   ✅ Gateway 路由到 ruoyi-auth (9210)");
+            log.info("   ✅ TokenController 接收请求");
+            log.info("   ✅ 根据clientId查询客户端配置");
+            log.info("   ✅ 根据grantType选择认证策略 (PasswordAuthStrategy)");
+            log.info("   ✅ 验证用户密码 (BCrypt)");
+            log.info("   ✅ 生成Token并返回 (access_token)");
             log.info("   ✅ Token存储在共享Redis中");
-            log.info("   ✅ APP用户与PC用户使用同一套认证体系");
+            log.info("   ✅ APP用户与PC用户使用同一套认证接口");
             
-            log.info("\n💡 APP用户登录的核心优势:");
-            log.info("   1. 统一使用RuoYi-Auth认证体系");
-            log.info("   2. 支持手机号登录（符合APP习惯）");
-            log.info("   3. Token可以访问所有微服务");
-            log.info("   4. 不需要独立的APP认证服务");
-            log.info("   5. 简化架构，降低维护成本");
+            log.info("\n💡 Gateway登录的核心优势:");
+            log.info("   1. 验证真实的Gateway路由配置");
+            log.info("   2. 统一入口，所有请求通过Gateway");
+            log.info("   3. 支持多客户端（APP/PC/H5）");
+            log.info("   4. 通过clientId区分不同客户端");
+            log.info("   5. 支持多种登录方式（password/sms/email/social）");
+            log.info("   6. 手机号可作为用户名登录（符合APP习惯）");
+            log.info("   7. 完全模拟真实APP前端调用方式");
             
             log.info("\n🔄 实际使用场景:");
             log.info("   APP用户登录流程:");
-            log.info("   1. APP前端 → POST /auth/login");
+            log.info("   1. APP前端 → POST http://localhost:8080/auth/login");
             log.info("      {");
-            log.info("        \"phonenumber\": \"13900000001\",");
-            log.info("        \"smsCode\": \"123456\",");
+            log.info("        \"username\": \"13900000001\",    // 或 phonenumber");
+            log.info("        \"password\": \"123456\",         // 或 smsCode");
             log.info("        \"clientId\": \"app-xypai-client-id\",");
-            log.info("        \"grantType\": \"sms\"");
+            log.info("        \"grantType\": \"password\",      // 或 sms");
+            log.info("        \"tenantId\": \"000000\"");
             log.info("      }");
-            log.info("   2. RuoYi-Auth验证 → 生成Token");
-            log.info("   3. 返回Token → APP保存");
-            log.info("   4. APP使用Token访问所有微服务");
+            log.info("   2. Gateway 路由到 ruoyi-auth");
+            log.info("   3. TokenController → PasswordAuthStrategy");
+            log.info("   4. 验证用户并生成Token");
+            log.info("   5. 返回 { access_token, expires_in }");
+            log.info("   6. APP保存Token");
+            log.info("   7. APP使用Token访问所有微服务");
             
-            log.info("\n💡 如需完整集成测试:");
-            log.info("   阶段1-2（单元测试）只需要:");
-            log.info("   ✅ Redis (6379) 运行");
-            log.info("   ✅ 数据库可用");
+            log.info("\n💡 运行此测试需要启动:");
+            log.info("   阶段1-2（登录测试）需要:");
+            log.info("   ✅ Gateway (8080) 运行 - 必需");
+            log.info("   ✅ ruoyi-auth 服务 (9210) 运行 - 必需");
+            log.info("   ✅ Redis (6379) 运行 - 必需");
+            log.info("   ✅ 数据库可用 - 必需");
             log.info("   ✅ APP用户已创建 (手机号: {})", TEST_PHONENUMBER);
+            log.info("   ✅ APP客户端已配置 (clientId: {})", TEST_CLIENT_ID);
             log.info("");
             log.info("   阶段3-5（集成测试）还需要:");
-            log.info("   ⚠️ Gateway (8080) 运行");
             log.info("   ⚠️ RuoYi-Demo Service (9401) 运行");
             log.info("   ⚠️ XYPai-Content Service (9403) 运行");
             log.info("   ⚠️ RuoYi-System Service (9201) 运行");
             
             log.info("\n📋 测试内容:");
-            log.info("   • 阶段1: LoginHelper.login() - APP用户手机号登录 ⭐");
+            log.info("   • 阶段1: POST /login - HTTP接口登录 ⭐");
+            log.info("   • 阶段2: 验证Token格式和有效性");
             log.info("   • 阶段3: 使用Token访问 GET /demo/cache/test1");
             log.info("   • 阶段4: 使用Token访问 GET /xypai-content/api/v1/homepage/users/list");
             log.info("   • 阶段5: 使用Token访问 GET /system/menu/getRouters");
             
             log.info("\n🎯 验证结果:");
-            log.info("   ✅ APP用户Token生成成功");
+            log.info("   ✅ HTTP登录接口正常工作");
+            log.info("   ✅ TokenController 正确处理请求");
+            log.info("   ✅ PasswordAuthStrategy 验证成功");
+            log.info("   ✅ Token生成并返回");
             log.info("   ✅ Token可以访问所有微服务");
             log.info("   ✅ Gateway正确识别和转发Token");
             log.info("   ✅ 各微服务正确验证Token");
-            log.info("   ✅ LoginHelper.getUserId() 正常工作");
+            log.info("   ✅ 统一认证接口，支持多客户端");
             log.info("   ✅ RuoYi-Auth统一认证体系验证成功！");
             
             log.info("\n📚 相关文档:");
-            log.info("   • xypai-security/security-oauth/CODE_ANALYSIS_FOR_APP.md");
-            log.info("   • xypai-security/security-oauth/APP_AUTH_DESIGN.md");
+            log.info("   • ruoyi-auth/APP_USER_ARCHITECTURE.md");
+            log.info("   • ruoyi-auth/FINAL_ANSWER.md");
+            log.info("   • ruoyi-auth/QUICK_ANSWER.md");
             log.info("   • xypai-security/security-oauth/APP_CLIENT_SETUP.sql");
             
             log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
         } catch (Exception e) {
-            log.error("\n❌ APP用户登录测试失败:");
+            log.error("\n❌ Gateway登录测试失败:");
             log.error("   错误: {}", e.getMessage());
-            log.error("   测试模式: APP用户手机号登录");
+            log.error("   测试模式: 通过Gateway调用登录接口");
             
-            log.error("\n💡 可能原因（阶段1-2单元测试）:");
-            log.error("   1. Redis 未启动或配置错误 (端口 6379)");
-            log.error("   2. 数据库未启动或配置错误");
-            log.error("   3. APP用户不存在: sys_user表中没有手机号 {} 的用户", TEST_PHONENUMBER);
-            log.error("   4. sysUserMapper bean未正确注入");
-            log.error("   5. LoginHelper或StpUtil不可用");
-            log.error("   6. LoginUser对象构建失败");
+            log.error("\n💡 可能原因（阶段1-2）:");
+            log.error("   1. Gateway 服务未启动 (端口 8080)");
+            log.error("   2. ruoyi-auth 服务未启动 (端口 9210)");
+            log.error("   3. Gateway路由配置错误 (/auth/** -> ruoyi-auth)");
+            log.error("   4. Redis 未启动或配置错误 (端口 6379)");
+            log.error("   5. 数据库未启动或配置错误");
+            log.error("   6. APP用户不存在: sys_user表中没有手机号 {} 的用户", TEST_PHONENUMBER);
+            log.error("   7. APP客户端未配置: sys_client表中没有 clientId={}", TEST_CLIENT_ID);
+            log.error("   8. 用户密码错误");
+            log.error("   9. 网络连接问题");
             
             log.error("\n💡 可能原因（阶段3-5集成测试）:");
-            log.error("   7. Gateway 未启动 (端口 8080)");
-            log.error("   8. RuoYi-Demo Service 未启动 (端口 9401)");
-            log.error("   9. XYPai-Content Service 未启动 (端口 9403)");
-            log.error("   10. RuoYi-System Service 未启动 (端口 9201)");
+            log.error("   10. RuoYi-Demo Service 未启动 (端口 9401)");
+            log.error("   11. XYPai-Content Service 未启动 (端口 9403)");
+            log.error("   12. RuoYi-System Service 未启动 (端口 9201)");
             
             log.error("\n🔧 调试建议:");
-            log.error("   1. 检查Redis: redis-cli ping");
-            log.error("   2. 检查数据库连接: application.yml datasource配置");
-            log.error("   3. 验证APP用户: SELECT * FROM sys_user WHERE phonenumber='{}'", TEST_PHONENUMBER);
-            log.error("   4. 创建APP用户: 执行 xypai-security/test-data/APP_TEST_DATA.sql");
-            log.error("   5. 查看日志: LoginHelper.login()");
-            log.error("   6. 验证Mapper: sysUserMapper.selectUserByPhonenumber()");
-            log.error("   7. 打印堆栈: " + e.getClass().getSimpleName());
-            log.error("   8. 查看完整异常: e.printStackTrace()");
+            log.error("   1. 启动Gateway: RuoYiGatewayApplication.main()");
+            log.error("   2. 启动ruoyi-auth: RuoYiAuthApplication.main()");
+            log.error("   3. 检查Gateway路由: {}/actuator/gateway/routes", GATEWAY_URL);
+            log.error("   4. 检查Redis: redis-cli ping");
+            log.error("   5. 检查数据库连接: application.yml datasource配置");
+            log.error("   6. 验证APP用户: SELECT * FROM sys_user WHERE phonenumber='{}'", TEST_PHONENUMBER);
+            log.error("   7. 创建APP用户: 执行 ruoyi-auth/src/test/resources/test-data/app-test-user.sql");
+            log.error("   8. 验证客户端: SELECT * FROM sys_client WHERE client_id='{}'", TEST_CLIENT_ID);
+            log.error("   9. 配置客户端: 执行 xypai-security/security-oauth/APP_CLIENT_SETUP.sql");
+            log.error("   10. 查看Gateway和auth服务日志");
+            log.error("   11. 测试Gateway: curl {}/auth/login -H 'Content-Type: application/json' -d '{{...}}'", GATEWAY_URL);
             log.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-            throw new RuntimeException("APP用户登录测试失败", e);
+            throw new RuntimeException("Gateway登录测试失败", e);
         }
     }
 }

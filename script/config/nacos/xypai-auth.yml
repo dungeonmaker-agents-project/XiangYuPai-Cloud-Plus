@@ -9,7 +9,7 @@ spring:
       datasource:
         # 主库数据源
         master:
-          type: ${spring.datasource.type}
+          type: com.zaxxer.hikari.HikariDataSource
           driver-class-name: com.mysql.cj.jdbc.Driver
           # 使用 xypai_auth 数据库（认证相关表：login_session, sms_verification等）
           url: ${datasource.xypai-auth-master.url}

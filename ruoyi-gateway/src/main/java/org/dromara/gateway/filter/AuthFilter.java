@@ -31,17 +31,28 @@ public class AuthFilter {
      */
     @Bean
     public SaReactorFilter getSaReactorFilter(IgnoreWhiteProperties ignoreWhite) {
+        // 🔍 调试：打印白名单配置
+        System.out.println("==================== Gateway 白名单配置 ====================");
+        System.out.println("白名单数量: " + ignoreWhite.getWhites().size());
+        ignoreWhite.getWhites().forEach(white -> System.out.println("  ✅ " + white));
+        System.out.println("===========================================================");
+        
         return new SaReactorFilter()
             // 拦截地址
             .addInclude("/**")
             .addExclude("/favicon.ico", "/actuator", "/actuator/**", "/resource/sse")
             // 鉴权方法：每次访问进入
             .setAuth(obj -> {
+                // 🔍 调试：打印请求路径
+                ServerHttpRequest request = SaReactorSyncHolder.getExchange().getRequest();
+                String path = request.getURI().getPath();
+                System.out.println("🔍 Gateway收到请求: " + request.getMethod() + " " + path);
+                
                 // 登录校验 -- 拦截所有路由
                 SaRouter.match("/**")
                     .notMatch(ignoreWhite.getWhites())
                     .check(r -> {
-                        ServerHttpRequest request = SaReactorSyncHolder.getExchange().getRequest();
+                        System.out.println("  ❌ 需要认证: " + path);
                         // 检查是否登录 是否有token
                         StpUtil.checkLogin();
 
