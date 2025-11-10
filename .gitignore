@@ -1,0 +1,75 @@
+######################################################################
+# Build Tools
+
+.gradle
+/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+######################################################################
+# IDE
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### JRebel ###
+rebel.xml
+### NetBeans ###
+nbproject/private/
+build/*
+nbbuild/
+nbdist/
+.nb-gradle/
+
+######################################################################
+# Others
+*.log
+*.xml.versionsBackup
+*.swp
+
+!*/build/*.java
+!*/build/*.html
+!*/build/*.xml
+
+.flattened-pom.xml
+
+######################################################################
+# Docker Data Directories
+# 忽略 Docker 容器产生的数据文件，但保留配置文件
+script/docker/mysql/data/
+# script/docker/nacos/logs/
+script/docker/minio/data/
+script/docker/redis/data/
+script/docker/ruoyi-seata-server/logs/
+script/docker/nginx/log/
+script/docker/ruoyi-monitor/logs/
+script/docker/snailjob/logs/
+script/docker/ruoyi-gateway/logs/
+script/docker/ruoyi-auth/logs/
+script/docker/ruoyi-system/logs/
+script/docker/ruoyi-gen/logs/
+script/docker/ruoyi-job/logs/
+script/docker/ruoyi-resource/logs/
+script/docker/ruoyi-workflow/logs/
+script/docker/elk/elasticsearch/data/
+script/docker/elk/elasticsearch/logs/
+script/docker/rocketmq/namesrv/logs/
+script/docker/rocketmq/broker1/logs/
+script/docker/rocketmq/broker1/store/
+script/docker/rabbitmq/log/
+script/docker/rabbitmq/data/
+script/docker/kafka/data/
+script/docker/grafana/*.db
