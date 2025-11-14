@@ -16,7 +16,13 @@ security:
       - /csrf
       - /warm-flow-ui/**
       # XYPai 模块白名单
-      - /xypai-auth/api/v1/auth/**
+      - /xypai-auth/api/v1/auth/login
+      - /xypai-auth/api/v1/auth/login/sms
+      - /xypai-auth/api/v1/auth/register
+      - /xypai-auth/api/v1/auth/sms/send
+      - /xypai-auth/api/v1/auth/sms/verify
+      - /xypai-auth/api/v1/auth/health
+      - /xypai-auth/code
       - /xypai-auth/doc.html
       - /xypai-auth/doc.html/**
       - /xypai-auth/webjars/**

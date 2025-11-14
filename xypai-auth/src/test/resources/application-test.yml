@@ -1,0 +1,125 @@
+# Test Profile Configuration
+# 
+# ⚠️ 重要说明：
+# 1. Sa-Token 的 Servlet 过滤器在测试环境中被禁用
+#    - 通过 SaTokenConfig 上的 @Profile("!test") 注解实现
+#    - 这样测试时登录接口才能正常访问，不会被 Sa-Token 拦截
+# 
+# 2. Sa-Token 的核心功能（token生成、验证）仍然正常工作
+#    - StpUtil.login() 可以正常生成 token
+#    - StpUtil.getTokenValue() 可以正常获取 token
+#    - 只是不会有 HTTP 请求拦截
+#
+# 3. 适用场景：
+#    - 单元测试：测试业务逻辑
+#    - 集成测试：测试完整的登录流程和 token 生成
+#    - 跨服务测试：测试 Gateway 路由和 Sa-Token 认证
+
+server:
+  port: 0  # Random port for tests
+
+spring:
+  # 数据源配置
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    # 动态数据源
+    dynamic:
+      primary: master  # 设置默认的数据源或者数据源组，默认值即为 master
+      strict: false    # 严格模式 false 可以使用未注册的数据源
+      datasource:
+        # 主库数据源
+        master:
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          url: jdbc:mysql://localhost:3306/ry-cloud?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true
+          username: root
+          password: root
+  
+  # Redis 配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 10s
+      ssl:
+        enabled: false
+      lettuce:
+        pool:
+          # 连接池最大连接数
+          max-active: 200
+          # 连接池最大阻塞等待时间（使用负值表示没有限制）
+          max-wait: -1ms
+          # 连接池中的最大空闲连接
+          max-idle: 10
+          # 连接池中的最小空闲连接
+          min-idle: 0
+  
+  # Nacos 配置（禁用）
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+
+# Dubbo 配置（禁用）
+dubbo:
+  application:
+    name: ruoyi-auth-test
+    qos-enable: false
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    address: spring-cloud://localhost
+    check: false
+  cloud:
+    subscribed-services: ""
+  consumer:
+    check: false
+    timeout: 30000
+
+# Sa-Token 配置（测试环境）
+sa-token:
+  # 基础配置
+  check-same-token: false  # 不检查同一账号是否在多处登录
+  is-check: false          # 不进行自动校验
+  
+  # Token 配置（测试用）
+  timeout: 2592000         # Token 有效期：30天（秒）
+  activity-timeout: -1     # Token 临时有效期：-1表示不限制
+  is-concurrent: true      # 允许同一账号并发登录
+  is-share: false          # 不同端的 token 不共享
+
+# MyBatis Plus 配置
+mybatis-plus:
+  # 不支持多包, 如有需要可在注解配置 或 提升扫包等级
+  # 例如 com.**.**.mapper
+  mapperPackage: org.dromara.**.mapper
+  # 对应的 XML 文件位置
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  # 实体扫描，多个package用逗号或者分号分隔
+  typeAliasesPackage: org.dromara.**.domain
+  # 启动时是否检查 MyBatis XML 文件的存在，默认不检查
+  checkConfigLocation: false
+  configuration:
+    # 自动驼峰命名规则（camel case）映射
+    mapUnderscoreToCamelCase: true
+    # MyBatis 自动映射策略
+    # NONE：不启用 PARTIAL：只对非嵌套 resultMap 自动映射 FULL：对所有 resultMap 自动映射
+    autoMappingBehavior: PARTIAL
+    # MyBatis 自动映射时未知列或未知属性处理策略
+    # NONE：不做处理 WARNING：打印相关警告 FAILING：抛出异常和详细信息
+    autoMappingUnknownColumnBehavior: NONE
+    # 更详细的日志输出 会有性能损耗 org.apache.ibatis.logging.stdout.StdOutImpl
+    # 关闭日志记录 (可单纯使用 p6spy 分析) org.apache.ibatis.logging.nologging.NoLoggingImpl
+    # 默认日志输出 org.apache.ibatis.logging.slf4j.Slf4jImpl
+    logImpl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    org.dromara: DEBUG
+    com.xypai: DEBUG

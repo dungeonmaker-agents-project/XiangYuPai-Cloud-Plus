@@ -382,7 +382,7 @@
         <module>ruoyi-example</module>
 
         <!-- XYPai 业务模块 -->
-<!--        <module>xypai-security</module>-->
+        <module>xypai-auth</module>
         <module>xypai-user</module>
         <module>xypai-chat</module>
         <module>xypai-content</module>

@@ -1,0 +1,751 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "API Documentation",
+    "version" : "1.0"
+  },
+  "paths" : {
+    "/login" : {
+      "post" : {
+        "summary" : "登录方法",
+        "description" : "登录方法",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "string",
+                "description" : "登录信息"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "结果",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "object",
+                      "properties" : {
+                        "access_token" : {
+                          "type" : "string",
+                          "description" : "授权令牌"
+                        },
+                        "refresh_token" : {
+                          "type" : "string",
+                          "description" : "刷新令牌"
+                        },
+                        "expire_in" : {
+                          "type" : "integer",
+                          "description" : "授权令牌 access_token 的有效期",
+                          "format" : "int64"
+                        },
+                        "refresh_expire_in" : {
+                          "type" : "integer",
+                          "description" : "刷新令牌 refresh_token 的有效期",
+                          "format" : "int64"
+                        },
+                        "client_id" : {
+                          "type" : "string",
+                          "description" : "应用id"
+                        },
+                        "scope" : {
+                          "type" : "string",
+                          "description" : "令牌权限"
+                        },
+                        "openid" : {
+                          "type" : "string",
+                          "description" : "用户 openid"
+                        }
+                      },
+                      "description" : "数据对象"
+                    }
+                  },
+                  "description" : "结果"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/binding/{source}" : {
+      "get" : {
+        "summary" : "第三方登录请求",
+        "description" : "第三方登录请求",
+        "parameters" : [ {
+          "name" : "source",
+          "in" : "path",
+          "description" : "登录来源",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "tenantId",
+          "in" : "query",
+          "description" : "",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "nullable" : false
+          }
+        }, {
+          "name" : "domain",
+          "in" : "query",
+          "description" : "",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "nullable" : false
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "结果",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "string",
+                      "description" : "数据对象"
+                    }
+                  },
+                  "description" : "结果"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/social/callback" : {
+      "post" : {
+        "summary" : "第三方登录回调业务处理 绑定授权",
+        "description" : "第三方登录回调业务处理 绑定授权",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "required" : [ "clientId", "grantType", "socialCode", "socialState", "source" ],
+                "type" : "object",
+                "properties" : {
+                  "clientId" : {
+                    "type" : "string",
+                    "description" : "客户端id"
+                  },
+                  "grantType" : {
+                    "type" : "string",
+                    "description" : "授权类型"
+                  },
+                  "tenantId" : {
+                    "type" : "string",
+                    "description" : "租户ID"
+                  },
+                  "code" : {
+                    "type" : "string",
+                    "description" : "验证码"
+                  },
+                  "uuid" : {
+                    "type" : "string",
+                    "description" : "唯一标识"
+                  },
+                  "source" : {
+                    "type" : "string",
+                    "description" : "第三方登录平台"
+                  },
+                  "socialCode" : {
+                    "type" : "string",
+                    "description" : "第三方登录code"
+                  },
+                  "socialState" : {
+                    "type" : "string",
+                    "description" : "第三方登录socialState"
+                  }
+                },
+                "description" : "请求体"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "结果",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "string",
+                      "description" : "数据对象"
+                    }
+                  },
+                  "description" : "结果"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/unlock/{socialId}" : {
+      "delete" : {
+        "summary" : "取消授权",
+        "description" : "取消授权",
+        "parameters" : [ {
+          "name" : "socialId",
+          "in" : "path",
+          "description" : "socialId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "string",
+                      "description" : "数据对象"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logout" : {
+      "post" : {
+        "summary" : "登出方法",
+        "description" : "登出方法",
+        "responses" : {
+          "200" : {
+            "description" : "",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "string",
+                      "description" : "数据对象"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/register" : {
+      "post" : {
+        "summary" : "用户注册",
+        "description" : "用户注册",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "required" : [ "clientId", "grantType", "password", "username" ],
+                "type" : "object",
+                "properties" : {
+                  "clientId" : {
+                    "type" : "string",
+                    "description" : "客户端id"
+                  },
+                  "grantType" : {
+                    "type" : "string",
+                    "description" : "授权类型"
+                  },
+                  "tenantId" : {
+                    "type" : "string",
+                    "description" : "租户ID"
+                  },
+                  "code" : {
+                    "type" : "string",
+                    "description" : "验证码"
+                  },
+                  "uuid" : {
+                    "type" : "string",
+                    "description" : "唯一标识"
+                  },
+                  "username" : {
+                    "type" : "string",
+                    "description" : "用户名"
+                  },
+                  "password" : {
+                    "type" : "string",
+                    "description" : "用户密码"
+                  },
+                  "userType" : {
+                    "type" : "string",
+                    "description" : "用户类型"
+                  }
+                },
+                "description" : ""
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "string",
+                      "description" : "数据对象"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tenant/list" : {
+      "get" : {
+        "summary" : "登录页面租户下拉框",
+        "description" : "登录页面租户下拉框",
+        "responses" : {
+          "200" : {
+            "description" : "租户列表",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "object",
+                      "properties" : {
+                        "tenantEnabled" : {
+                          "type" : "boolean",
+                          "description" : "租户开关"
+                        },
+                        "voList" : {
+                          "type" : "array",
+                          "description" : "租户对象列表",
+                          "items" : {
+                            "type" : "object",
+                            "properties" : {
+                              "tenantId" : {
+                                "type" : "string",
+                                "description" : "租户编号"
+                              },
+                              "companyName" : {
+                                "type" : "string",
+                                "description" : "企业名称"
+                              },
+                              "domain" : {
+                                "type" : "string",
+                                "description" : "域名"
+                              }
+                            },
+                            "description" : "租户列表"
+                          }
+                        }
+                      },
+                      "description" : "数据对象"
+                    }
+                  },
+                  "description" : "租户列表"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sms/send" : {
+      "post" : {
+        "summary" : "发送短信验证码",
+        "description" : "发送短信验证码",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "required" : [ "mobile", "type" ],
+                "type" : "object",
+                "properties" : {
+                  "mobile" : {
+                    "pattern" : "^1[3-9]\\d{9}$",
+                    "type" : "string",
+                    "description" : ""
+                  },
+                  "type" : {
+                    "pattern" : "^(login|register|reset)$",
+                    "type" : "string",
+                    "description" : ""
+                  },
+                  "region" : {
+                    "type" : "string",
+                    "description" : "区号（可选，默认+86）",
+                    "default" : "+86"
+                  }
+                },
+                "description" : "请求体"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "结果",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "object",
+                      "properties" : {
+                        "codeId" : {
+                          "type" : "string"
+                        },
+                        "expiresIn" : {
+                          "type" : "integer"
+                        },
+                        "nextSendTime" : {
+                          "type" : "integer"
+                        },
+                        "mobile" : {
+                          "type" : "string"
+                        },
+                        "code" : {
+                          "type" : "string"
+                        }
+                      },
+                      "description" : "数据对象"
+                    }
+                  },
+                  "description" : "结果"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sms/verify" : {
+      "post" : {
+        "summary" : "验证短信验证码",
+        "description" : "验证短信验证码",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "required" : [ "code", "codeId", "mobile", "type" ],
+                "type" : "object",
+                "properties" : {
+                  "mobile" : {
+                    "type" : "string",
+                    "description" : ""
+                  },
+                  "code" : {
+                    "pattern" : "^\\d{6}$",
+                    "type" : "string",
+                    "description" : ""
+                  },
+                  "type" : {
+                    "type" : "string",
+                    "description" : ""
+                  },
+                  "codeId" : {
+                    "type" : "string",
+                    "description" : ""
+                  }
+                },
+                "description" : "请求体"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "结果",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "string",
+                      "description" : "数据对象"
+                    }
+                  },
+                  "description" : "结果"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/code" : {
+      "get" : {
+        "summary" : "生成验证码",
+        "description" : "生成验证码",
+        "responses" : {
+          "200" : {
+            "description" : "",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "properties" : {
+                    "code" : {
+                      "type" : "integer",
+                      "description" : "消息状态码"
+                    },
+                    "msg" : {
+                      "type" : "string",
+                      "description" : "消息内容"
+                    },
+                    "data" : {
+                      "type" : "object",
+                      "properties" : {
+                        "captchaEnabled" : {
+                          "type" : "boolean",
+                          "description" : "是否开启验证码",
+                          "default" : "true"
+                        },
+                        "uuid" : {
+                          "type" : "string",
+                          "description" : ""
+                        },
+                        "img" : {
+                          "type" : "string",
+                          "description" : "验证码图片"
+                        }
+                      },
+                      "description" : "数据对象"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "登录验证信息" : {
+        "type" : "object",
+        "properties" : {
+          "access_token" : {
+            "type" : "string",
+            "description" : "授权令牌"
+          },
+          "refresh_token" : {
+            "type" : "string",
+            "description" : "刷新令牌"
+          },
+          "expire_in" : {
+            "type" : "integer",
+            "description" : "授权令牌 access_token 的有效期",
+            "format" : "int64"
+          },
+          "refresh_expire_in" : {
+            "type" : "integer",
+            "description" : "刷新令牌 refresh_token 的有效期",
+            "format" : "int64"
+          },
+          "client_id" : {
+            "type" : "string",
+            "description" : "应用id"
+          },
+          "scope" : {
+            "type" : "string",
+            "description" : "令牌权限"
+          },
+          "openid" : {
+            "type" : "string",
+            "description" : "用户 openid"
+          }
+        },
+        "description" : "数据对象"
+      },
+      "租户列表" : {
+        "type" : "object",
+        "properties" : {
+          "tenantId" : {
+            "type" : "string",
+            "description" : "租户编号"
+          },
+          "companyName" : {
+            "type" : "string",
+            "description" : "企业名称"
+          },
+          "domain" : {
+            "type" : "string",
+            "description" : "域名"
+          }
+        },
+        "description" : "租户列表"
+      },
+      "登录租户对象" : {
+        "type" : "object",
+        "properties" : {
+          "tenantEnabled" : {
+            "type" : "boolean",
+            "description" : "租户开关"
+          },
+          "voList" : {
+            "type" : "array",
+            "description" : "租户对象列表",
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "tenantId" : {
+                  "type" : "string",
+                  "description" : "租户编号"
+                },
+                "companyName" : {
+                  "type" : "string",
+                  "description" : "企业名称"
+                },
+                "domain" : {
+                  "type" : "string",
+                  "description" : "域名"
+                }
+              },
+              "description" : "租户列表"
+            }
+          }
+        },
+        "description" : "数据对象"
+      },
+      "java.lang.Object" : {
+        "type" : "object",
+        "properties" : {
+          "codeId" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "type" : "integer"
+          },
+          "nextSendTime" : {
+            "type" : "integer"
+          },
+          "mobile" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          }
+        },
+        "description" : "数据对象"
+      },
+      "验证码信息" : {
+        "type" : "object",
+        "properties" : {
+          "captchaEnabled" : {
+            "type" : "boolean",
+            "description" : "是否开启验证码",
+            "default" : "true"
+          },
+          "uuid" : {
+            "type" : "string",
+            "description" : ""
+          },
+          "img" : {
+            "type" : "string",
+            "description" : "验证码图片"
+          }
+        },
+        "description" : "数据对象"
+      }
+    }
+  }
+}

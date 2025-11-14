@@ -48,8 +48,8 @@ Write-Host ""
 $mainDirs = @(
     "ruoyi-api", "ruoyi-auth", "ruoyi-common", "ruoyi-example",
     "ruoyi-gateway", "ruoyi-modules", "ruoyi-visual",
-    "xypai-chat", "xypai-content", "xypai-security", "xypai-trade", "xypai-user",
-    "script", "dev_workspace"
+    "xypai-chat", "xypai-content", "xypai-trade", "xypai-user",
+    "script"
 )
 
 # Directories to skip
@@ -197,13 +197,11 @@ $output += ""
 $output += "**Custom Business:**"
 $output += "- xypai-chat - Chat/messaging service (WebSocket, conversations)"
 $output += "- xypai-content - Content management (articles, media, comments)"
-$output += "- xypai-security - OAuth2 authentication (SMS login, devices, sessions)"
 $output += "- xypai-trade - Trade/payment (orders, wallet, reviews)"
 $output += "- xypai-user - User management (profiles, relations, stats)"
 $output += ""
 $output += "**Infrastructure:**"
 $output += "- script - SQL scripts, Docker configs, Nacos configs"
-$output += "- dev_workspace - Team workspaces, deployment docs"
 $output += ""
 
 # Process each module

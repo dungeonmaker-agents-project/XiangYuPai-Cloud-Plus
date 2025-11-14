@@ -63,6 +63,22 @@
             <artifactId>ruoyi-common-dubbo</artifactId>
         </dependency>
 
+        <!-- ✅ 对齐 ruoyi-system 的依赖 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
+        </dependency>
+
         <!-- WebSocket Support -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

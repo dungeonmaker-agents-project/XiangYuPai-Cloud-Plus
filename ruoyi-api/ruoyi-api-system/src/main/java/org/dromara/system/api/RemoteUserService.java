@@ -165,4 +165,20 @@ public interface RemoteUserService {
      */
     Map<Long, String> selectUserNamesByIds(List<Long> userIds);
 
+    /**
+     * 分页查询所有系统用户列表（用于xypai-user模块关联查询）
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页大小
+     * @return 系统用户列表
+     */
+    List<RemoteUserVo> selectPageUserList(Integer pageNum, Integer pageSize);
+
+    /**
+     * 获取系统用户总数（用于分页查询）
+     *
+     * @return 用户总数
+     */
+    Long countAllUsers();
+
 }

@@ -415,4 +415,42 @@ public class RemoteUserServiceImpl implements RemoteUserService {
         return StreamUtils.toMap(list, SysUser::getUserId, SysUser::getNickName);
     }
 
+    /**
+     * 分页查询所有系统用户列表（用于xypai-user模块关联查询）
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页大小
+     * @return 系统用户列表
+     */
+    @Override
+    public List<RemoteUserVo> selectPageUserList(Integer pageNum, Integer pageSize) {
+        // 计算偏移量
+        int offset = (pageNum - 1) * pageSize;
+
+        // 查询系统用户列表（只查询正常状态的用户）
+        List<SysUserVo> list = userMapper.selectVoList(new LambdaQueryWrapper<SysUser>()
+            .select(SysUser::getUserId, SysUser::getDeptId, SysUser::getUserName,
+                SysUser::getNickName, SysUser::getUserType, SysUser::getEmail,
+                SysUser::getPhonenumber, SysUser::getSex, SysUser::getStatus,
+                SysUser::getCreateTime)
+            .eq(SysUser::getStatus, SystemConstants.NORMAL)
+            .eq(SysUser::getDelFlag, SystemConstants.NORMAL)
+            .orderByDesc(SysUser::getCreateTime)
+            .last("LIMIT " + offset + ", " + pageSize));
+
+        return MapstructUtils.convert(list, RemoteUserVo.class);
+    }
+
+    /**
+     * 获取系统用户总数（用于分页查询）
+     *
+     * @return 用户总数
+     */
+    @Override
+    public Long countAllUsers() {
+        return userMapper.selectCount(new LambdaQueryWrapper<SysUser>()
+            .eq(SysUser::getStatus, SystemConstants.NORMAL)
+            .eq(SysUser::getDelFlag, SystemConstants.NORMAL));
+    }
+
 }

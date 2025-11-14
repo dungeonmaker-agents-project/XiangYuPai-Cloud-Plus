@@ -6,7 +6,9 @@ import lombok.NoArgsConstructor;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
+
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Validator 校验框架工具
@@ -17,6 +19,7 @@ import java.util.Set;
 public class ValidatorUtils {
 
     private static final Validator VALID = SpringUtils.getBean(Validator.class);
+    private static final Pattern MOBILE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
 
     /**
      * 对给定对象进行参数校验，并根据指定的校验组进行校验
@@ -30,6 +33,16 @@ public class ValidatorUtils {
         if (!validate.isEmpty()) {
             throw new ConstraintViolationException("参数校验异常", validate);
         }
+    }
+
+    /**
+     * 判断字符串是否为合法手机号（大陆 1[3-9] 开头段位）
+     *
+     * @param mobile 手机号
+     * @return true 合法 false 非法
+     */
+    public static boolean isMobile(String mobile) {
+        return StringUtils.isNotBlank(mobile) && MOBILE_PATTERN.matcher(mobile).matches();
     }
 
 }

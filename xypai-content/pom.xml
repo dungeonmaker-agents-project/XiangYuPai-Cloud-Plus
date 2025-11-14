@@ -48,10 +48,13 @@
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
 
+        <!-- ⚠️ 移除重复依赖：ruoyi-common-satoken 已被 ruoyi-common-security 传递包含 -->
+        <!--
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-satoken</artifactId>
         </dependency>
+        -->
 
         <dependency>
             <groupId>org.dromara</groupId>
@@ -66,6 +69,22 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-dubbo</artifactId>
+        </dependency>
+
+        <!-- ✅ 对齐 ruoyi-system 的依赖 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
         </dependency>
 
         <!-- JTS Spatial Library (空间数据处理) -->
