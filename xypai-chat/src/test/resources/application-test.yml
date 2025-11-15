@@ -1,0 +1,76 @@
+# Test Configuration for xypai-chat
+# This configuration is used when running tests with @ActiveProfiles("test")
+
+spring:
+  # Use H2 in-memory database for testing (faster, isolated)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/xypai_chat_test?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+    username: root
+    password: password
+
+  # Redis configuration for testing
+  redis:
+    host: localhost
+    port: 6379
+    database: 15  # Use database 15 for testing (separate from production)
+    password:
+    timeout: 10s
+    lettuce:
+      pool:
+        max-active: 20
+        max-wait: -1ms
+        max-idle: 10
+        min-idle: 0
+
+# MyBatis Plus configuration
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # Enable SQL logging for tests
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted
+      logic-delete-value: true
+      logic-not-delete-value: false
+
+# Logging configuration for tests
+logging:
+  level:
+    org.dromara.xypai.chat: DEBUG
+    org.springframework.web: INFO
+    org.springframework.test: INFO
+    com.baomidou.mybatisplus: DEBUG
+
+# OSS configuration for testing (mock)
+oss:
+  endpoint: http://localhost:9000  # MinIO for local testing
+  accessKey: minioadmin
+  secretKey: minioadmin
+  bucketName: xypai-chat-test
+
+# Sa-Token configuration for testing
+sa-token:
+  token-name: Authorization
+  timeout: 2592000  # 30 days
+  is-concurrent: true
+  is-share: false
+  is-log: false  # Disable logging for tests
+
+# Dubbo configuration for testing (disable)
+dubbo:
+  application:
+    name: xypai-chat-test
+  registry:
+    address: N/A  # Disable registry for unit tests
+  protocol:
+    name: dubbo
+    port: -1  # Random port for testing
+
+# Test-specific settings
+test:
+  # Disable actual file uploads during testing
+  file-upload-enabled: false
+  # Disable WebSocket during unit tests (enable for integration tests)
+  websocket-enabled: false
+  # Use mock data for external services
+  use-mock-services: true

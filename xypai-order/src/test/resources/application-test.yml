@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: xypai-order-test
+  profiles:
+    active: test
+
+  # Database Configuration (H2 In-Memory)
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;INIT=RUNSCRIPT FROM 'classpath:test-data.sql'
+    username: sa
+    password:
+
+  # Redis Configuration (Embedded Redis for testing)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 15
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+# MyBatis Plus Configuration
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      update-strategy: not_empty
+
+# Dubbo Configuration (Mock for testing)
+dubbo:
+  application:
+    name: xypai-order-test
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    address: N/A
+  consumer:
+    check: false
+    timeout: 3000
+
+# Sa-Token Configuration
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  activity-timeout: -1
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-log: false
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    org.dromara: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.test: DEBUG
+    com.baomidou.mybatisplus: DEBUG

@@ -1,0 +1,72 @@
+package org.dromara.user.mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.dromara.user.domain.entity.Skill;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+/**
+ * 技能Mapper
+ * Skill Mapper
+ *
+ * @author XiangYuPai
+ * @since 2025-11-14
+ */
+@Mapper
+public interface SkillMapper extends BaseMapper<Skill> {
+
+    /**
+     * 查找附近的技能（空间索引查询）
+     *
+     * @param latitude     纬度
+     * @param longitude    经度
+     * @param radiusMeters 半径（米）
+     * @param limit        返回数量
+     * @return 附近技能列表
+     */
+    @Select("""
+        SELECT *,
+          ST_Distance_Sphere(
+            POINT(longitude, latitude),
+            POINT(#{longitude}, #{latitude})
+          ) / 1000 AS distance_km
+        FROM skills
+        WHERE skill_type = 'offline'
+          AND is_online = 1
+          AND ST_Distance_Sphere(
+            POINT(longitude, latitude),
+            POINT(#{longitude}, #{latitude})
+          ) <= #{radiusMeters}
+          AND deleted = 0
+        ORDER BY distance_km
+        LIMIT #{limit}
+        """)
+    List<Skill> findNearbySkills(
+        @Param("latitude") BigDecimal latitude,
+        @Param("longitude") BigDecimal longitude,
+        @Param("radiusMeters") int radiusMeters,
+        @Param("limit") int limit
+    );
+
+    /**
+     * 查询用户的所有技能
+     *
+     * @param userId 用户ID
+     * @return 技能列表
+     */
+    @Select("SELECT * FROM skills WHERE user_id = #{userId} AND deleted = 0 ORDER BY created_at DESC")
+    List<Skill> selectByUserId(@Param("userId") Long userId);
+
+    /**
+     * 查询用户的上架技能
+     *
+     * @param userId 用户ID
+     * @return 技能列表
+     */
+    @Select("SELECT * FROM skills WHERE user_id = #{userId} AND is_online = 1 AND deleted = 0 ORDER BY created_at DESC")
+    List<Skill> selectOnlineSkillsByUserId(@Param("userId") Long userId);
+}

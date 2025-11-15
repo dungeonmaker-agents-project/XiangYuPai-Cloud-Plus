@@ -1,0 +1,71 @@
+package org.dromara.user.domain.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import jakarta.validation.constraints.*;
+import java.math.BigDecimal;
+import java.util.List;
+
+/**
+ * 更新技能DTO
+ * Update Skill DTO
+ *
+ * @author XiangYuPai
+ * @since 2025-11-14
+ */
+@Data
+@Schema(description = "Update skill request")
+public class SkillUpdateDto {
+
+    @Size(min = 2, max = 50, message = "技能名称长度为2-50字符")
+    @Schema(description = "Skill name")
+    private String skillName;
+
+    @Schema(description = "Cover image URL")
+    private String coverImage;
+
+    @Size(min = 10, max = 500, message = "技能介绍长度为10-500字符")
+    @Schema(description = "Skill description")
+    private String description;
+
+    @DecimalMin(value = "0.01", message = "价格必须大于0")
+    @Schema(description = "Price")
+    private BigDecimal price;
+
+    @Schema(description = "Price unit: 局, 小时")
+    private String priceUnit;
+
+    // === Online Skill Fields ===
+    @Schema(description = "Game name (for online skills)")
+    private String gameName;
+
+    @Schema(description = "Game rank (for online skills)")
+    private String gameRank;
+
+    @Schema(description = "Service hours (for online skills)")
+    private BigDecimal serviceHours;
+
+    // === Offline Skill Fields ===
+    @Schema(description = "Service type (for offline skills)")
+    private String serviceType;
+
+    @Schema(description = "Service location (for offline skills)")
+    private String serviceLocation;
+
+    @Schema(description = "Latitude (for offline skills)")
+    private BigDecimal latitude;
+
+    @Schema(description = "Longitude (for offline skills)")
+    private BigDecimal longitude;
+
+    // === Additional Fields ===
+    @Schema(description = "Skill images (URLs)")
+    private List<String> images;
+
+    @Schema(description = "Service promises")
+    private List<String> promises;
+
+    @Schema(description = "Available times")
+    private List<AvailableTimeDto> availableTimes;
+}

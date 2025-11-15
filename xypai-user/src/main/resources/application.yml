@@ -1,53 +1,50 @@
-# Tomcat
 server:
   port: 9401
 
-# Spring
 spring:
   application:
-    # 应用名称
     name: xypai-user
-  profiles:
-    # 环境配置
-    active: @profiles.active@
 
-# ==========================================
-# 🔧 租户配置 - xypai-user 模块特殊配置
-# ==========================================
-# 说明: xypai-user 的 user 表不使用租户隔离
-# 原因: user 表与 sys_user 关联，无需按租户隔离
-# ==========================================
-tenant:
-  # 启用租户功能（框架级别）
+  # Servlet
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  # Jackson
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-DD HH:mm:ss
+    serialization:
+      write-dates-as-timestamps: false
+
+# MyBatis Plus
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  type-aliases-package: org.dromara.user.domain.entity
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# Knife4j API Documentation
+knife4j:
   enable: true
-  # 排除不需要租户隔离的表
-  excludes:
-    - user                          # 用户核心信息表
-    - user_relation                 # 用户关系表
-    - user_stats                    # 用户统计数据表
-    - user_wallet                   # 用户钱包表
-    - user_transaction              # 用户交易记录表
-    - user_occupation               # 用户职业/技能表
-    - user_dict                     # 用户字典配置表
+  production: false
+  basic:
+    enable: false
 
---- # nacos 配置
-spring:
-  cloud:
-    nacos:
-      # nacos 服务地址
-      server-addr: @nacos.server@
-      username: @nacos.username@
-      password: @nacos.password@
-      discovery:
-        # 注册组
-        group: @nacos.discovery.group@
-        namespace: ${spring.profiles.active}
-      config:
-        # 配置组
-        group: @nacos.config.group@
-        namespace: ${spring.profiles.active}
-  config:
-    import:
-      - optional:nacos:application-common.yml
-      - optional:nacos:datasource.yml
-      - optional:nacos:${spring.application.name}.yml
+# Logging
+logging:
+  level:
+    root: info
+    org.dromara.user: debug
+    org.apache.dubbo: warn
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.dromara</groupId>
         <artifactId>ruoyi-cloud-plus</artifactId>
@@ -10,73 +11,63 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>xypai-chat</artifactId>
-
-    <description>
-        xypai-chat聊天模块 - 即时通讯/会话管理
-    </description>
+    <description>XiangYuPai Chat & Messaging Service</description>
 
     <dependencies>
-
-        <!-- RuoYi Common 依赖 -->
+        <!-- Core Dependencies -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-log</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-doc</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-web</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
 
+        <!-- Security (includes Sa-Token) -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
 
+        <!-- Cache -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
+        <!-- OSS -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-sensitive</artifactId>
+            <artifactId>ruoyi-common-oss</artifactId>
         </dependency>
 
+        <!-- RPC - Dubbo -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-dubbo</artifactId>
         </dependency>
 
-        <!-- ✅ 对齐 ruoyi-system 的依赖 -->
+        <!-- API Documentation -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-tenant</artifactId>
+            <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <!-- Translation -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-translation</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-service-impl</artifactId>
         </dependency>
 
         <!-- WebSocket Support -->
@@ -85,6 +76,22 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
+        <!-- API Interfaces -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-user</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>xypai-api-chat</artifactId>
+        </dependency>
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -93,7 +100,6 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -104,5 +110,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

@@ -1,34 +1,49 @@
-# Tomcat
 server:
   port: 9403
 
-# Spring
 spring:
   application:
-    # 应用名称
     name: xypai-content
   profiles:
-    # 环境配置
-    active: @profiles.active@
+    active: dev
 
 --- # nacos 配置
 spring:
   cloud:
     nacos:
       # nacos 服务地址
-      server-addr: @nacos.server@
-      username: @nacos.username@
-      password: @nacos.password@
+      server-addr: ${NACOS_HOST:127.0.0.1}:${NACOS_PORT:8848}
       discovery:
         # 注册组
-        group: @nacos.discovery.group@
-        namespace: ${spring.profiles.active}
+        group: ${NACOS_DISCOVERY_GROUP:XYPAI_GROUP}
+        namespace: ${NACOS_NAMESPACE:}
       config:
         # 配置组
-        group: @nacos.config.group@
-        namespace: ${spring.profiles.active}
+        group: ${NACOS_CONFIG_GROUP:XYPAI_GROUP}
+        namespace: ${NACOS_NAMESPACE:}
   config:
     import:
       - optional:nacos:application-common.yml
-      - optional:nacos:datasource.yml
-      - optional:nacos:${spring.application.name}.yml
+      - optional:nacos:xypai-content-${spring.profiles.active}.yml
+
+--- # 监控配置
+spring:
+  boot:
+    admin:
+      client:
+        url: http://${MONITOR_ADMIN_HOST:127.0.0.1}:${MONITOR_ADMIN_PORT:9090}/admin
+        instance:
+          prefer-ip: true
+        username: ${MONITOR_ADMIN_USERNAME:ruoyi}
+        password: ${MONITOR_ADMIN_PASSWORD:123456}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: ALWAYS
+    logfile:
+      external-file: ./logs/xypai-content/console.log

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.content.mapper.FeedMapper">
+
+    <!-- 查询附近的动态 -->
+    <select id="selectNearbyFeeds" resultType="org.dromara.content.domain.entity.Feed">
+        SELECT *,
+            ST_Distance_Sphere(
+                POINT(longitude, latitude),
+                POINT(#{longitude}, #{latitude})
+            ) / 1000 AS distance
+        FROM feed
+        WHERE deleted = 0
+          AND status = 0
+          AND ST_Distance_Sphere(
+                POINT(longitude, latitude),
+                POINT(#{longitude}, #{latitude})
+              ) <= #{radiusKm} * 1000
+        ORDER BY distance ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

@@ -1,30 +1,100 @@
 # 测试环境配置
+# Test Environment Configuration
+
 spring:
+  # 数据源配置
   datasource:
     driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
     username: sa
-    password: 
-    
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: create-drop
-      
-# MyBatis Plus 配置
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    map-underscore-to-camel-case: true
-  global-config:
-    db-config:
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
+    password:
+
+  # H2控制台配置(可选,用于调试)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # MyBatis Plus配置
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    global-config:
+      db-config:
+        logic-delete-field: delFlag
+        logic-delete-value: 1
+        logic-not-delete-value: 0
+
+  # Redis配置(使用嵌入式Redis进行测试)
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    timeout: 3000
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
 
 # 日志配置
 logging:
   level:
-    com.xypai.user: DEBUG
+    root: INFO
+    org.dromara: DEBUG
     org.springframework.web: DEBUG
-    org.springframework.security: DEBUG
+    org.springframework.test: DEBUG
+
+# Sa-Token配置
+sa-token:
+  # token名称
+  token-name: Authorization
+  # token有效期(单位:秒) -1代表永不过期
+  timeout: 2592000
+  # token临时有效期 (指定时间内无操作就视为token过期) 单位: 秒
+  activity-timeout: -1
+  # 是否允许同一账号并发登录
+  is-concurrent: true
+  # 在多人登录同一账号时,是否共用一个token
+  is-share: false
+  # 是否输出操作日志
+  is-log: false
+
+# 业务配置
+xypai:
+  # 测试环境标识
+  env: test
+
+  # OSS配置(测试环境使用本地存储)
+  oss:
+    enabled: false
+    local-path: /tmp/xypai-test/uploads
+
+  # 用户服务配置
+  user:
+    # 昵称长度限制
+    nickname-max-length: 20
+    # 简介长度限制
+    bio-max-length: 500
+    # 头像大小限制(MB)
+    avatar-max-size: 5
+    # 身高范围
+    height-min: 100
+    height-max: 250
+    # 体重范围
+    weight-min: 30
+    weight-max: 300
+    # 年龄限制
+    min-age: 18
+
+  # 技能服务配置
+  skill:
+    # 图片数量限制
+    image-max-count: 9
+    # 图片大小限制(MB)
+    image-max-size: 5
+    # 搜索默认半径(米)
+    nearby-default-radius: 10000
+    # 搜索最大半径(米)
+    nearby-max-radius: 50000

@@ -14,6 +14,8 @@
         <module>ruoyi-api-resource</module>
         <module>ruoyi-api-workflow</module>
         <module>xypai-api-appuser</module>
+        <module>xypai-api-common</module>
+        <module>xypai-api-chat</module>
     </modules>
 
     <artifactId>ruoyi-api</artifactId>

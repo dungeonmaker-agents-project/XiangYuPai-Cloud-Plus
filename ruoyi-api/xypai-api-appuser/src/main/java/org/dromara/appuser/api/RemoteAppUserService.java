@@ -143,4 +143,45 @@ public interface RemoteAppUserService {
      * @return true=启用成功
      */
     boolean enableUser(Long userId);
+
+    // ==================== 支付密码管理 ====================
+
+    /**
+     * 设置支付密码（首次设置）
+     *
+     * @param userId          用户ID
+     * @param paymentPassword 支付密码（6位数字，明文）
+     * @return true=设置成功，false=设置失败
+     * @throws UserException 用户不存在或已设置过
+     */
+    boolean setPaymentPassword(Long userId, String paymentPassword) throws UserException;
+
+    /**
+     * 修改支付密码
+     *
+     * @param userId             用户ID
+     * @param oldPaymentPassword 原支付密码（明文）
+     * @param newPaymentPassword 新支付密码（明文）
+     * @return true=修改成功，false=修改失败
+     * @throws UserException 用户不存在或原密码错误
+     */
+    boolean updatePaymentPassword(Long userId, String oldPaymentPassword, String newPaymentPassword) throws UserException;
+
+    /**
+     * 验证支付密码
+     *
+     * @param userId          用户ID
+     * @param paymentPassword 支付密码（明文）
+     * @return true=正确，false=错误
+     * @throws UserException 用户不存在或未设置支付密码
+     */
+    boolean verifyPaymentPassword(Long userId, String paymentPassword) throws UserException;
+
+    /**
+     * 检查用户是否已设置支付密码
+     *
+     * @param userId 用户ID
+     * @return true=已设置，false=未设置
+     */
+    boolean hasPaymentPassword(Long userId);
 }
