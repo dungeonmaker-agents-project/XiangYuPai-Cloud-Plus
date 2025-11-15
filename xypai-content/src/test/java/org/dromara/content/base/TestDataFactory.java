@@ -1,10 +1,10 @@
 package org.dromara.content.base;
 
-import org.dromara.content.domain.Comment;
-import org.dromara.content.domain.Feed;
-import org.dromara.content.domain.Topic;
+import org.dromara.content.domain.entity.Comment;
+import org.dromara.content.domain.entity.Feed;
+import org.dromara.content.domain.entity.Topic;
 import org.dromara.content.domain.dto.FeedPublishDTO;
-import org.dromara.content.domain.dto.CommentDTO;
+import org.dromara.content.domain.dto.CommentPublishDTO;
 import org.dromara.content.domain.dto.ReportDTO;
 import org.dromara.content.mapper.CommentMapper;
 import org.dromara.content.mapper.FeedMapper;
@@ -249,20 +249,20 @@ public class TestDataFactory {
     }
 
     /**
-     * Create CommentDTO for testing
+     * Create CommentPublishDTO for testing
      */
-    public CommentDTO createCommentDTO(Long feedId, String content) {
-        CommentDTO dto = new CommentDTO();
+    public CommentPublishDTO createCommentDTO(Long feedId, String content) {
+        CommentPublishDTO dto = new CommentPublishDTO();
         dto.setFeedId(feedId);
         dto.setContent(content);
         return dto;
     }
 
     /**
-     * Create CommentDTO for reply
+     * Create CommentPublishDTO for reply
      */
-    public CommentDTO createReplyDTO(Long feedId, String content, Long parentId, Long replyToUserId) {
-        CommentDTO dto = createCommentDTO(feedId, content);
+    public CommentPublishDTO createReplyDTO(Long feedId, String content, Long parentId, Long replyToUserId) {
+        CommentPublishDTO dto = createCommentDTO(feedId, content);
         dto.setParentId(parentId);
         dto.setReplyToUserId(replyToUserId);
         return dto;

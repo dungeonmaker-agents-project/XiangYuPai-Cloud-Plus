@@ -1,8 +1,8 @@
 package org.dromara.content.flow;
 
 import org.dromara.content.base.BaseIntegrationTest;
-import org.dromara.content.domain.Feed;
-import org.dromara.content.domain.dto.CommentDTO;
+import org.dromara.content.domain.entity.Feed;
+import org.dromara.content.domain.dto.CommentPublishDTO;
 import org.dromara.content.domain.dto.FeedPublishDTO;
 import org.dromara.content.domain.dto.InteractionDTO;
 import org.dromara.content.domain.dto.ReportDTO;
@@ -135,7 +135,7 @@ public class CompleteUserFlowTest extends BaseIntegrationTest {
             .andExpect(jsonPath("$.data.shareCount").value(1));
 
         // Step 6: User posts a comment
-        CommentDTO commentDTO = testDataFactory.createCommentDTO(
+        CommentPublishDTO commentDTO = testDataFactory.createCommentPublishDTO(
             targetFeed.getId(),
             "非常不错的分享！"
         );
@@ -254,7 +254,7 @@ public class CompleteUserFlowTest extends BaseIntegrationTest {
 
         // Step 2: User 2 posts a comment
         String user2Token = "mock-test-token-" + user2Id;
-        CommentDTO comment1DTO = testDataFactory.createCommentDTO(
+        CommentPublishDTO comment1DTO = testDataFactory.createCommentPublishDTO(
             discussionFeed.getId(),
             "我觉得这个观点很有道理！"
         );
@@ -272,7 +272,7 @@ public class CompleteUserFlowTest extends BaseIntegrationTest {
 
         // Step 3: User 3 replies to User 2's comment
         String user3Token = "mock-test-token-" + user3Id;
-        // CommentDTO replyDTO = testDataFactory.createReplyDTO(
+        // CommentPublishDTO replyDTO = testDataFactory.createReplyDTO(
         //     discussionFeed.getId(),
         //     "赞同！我也有同样的想法",
         //     comment1Id,
@@ -287,7 +287,7 @@ public class CompleteUserFlowTest extends BaseIntegrationTest {
         //     .andExpect(jsonPath("$.msg").value("回复成功"));
 
         // Step 4: User 1 (author) replies back
-        // CommentDTO authorReplyDTO = testDataFactory.createReplyDTO(
+        // CommentPublishDTO authorReplyDTO = testDataFactory.createReplyDTO(
         //     discussionFeed.getId(),
         //     "谢谢大家的支持！",
         //     comment1Id,
@@ -404,7 +404,7 @@ public class CompleteUserFlowTest extends BaseIntegrationTest {
             .andExpect(status().isOk());
 
         // Comment
-        CommentDTO commentDTO = testDataFactory.createCommentDTO(
+        CommentPublishDTO commentDTO = testDataFactory.createCommentPublishDTO(
             someFeed.getId(),
             "很棒的分享！"
         );

@@ -1,7 +1,7 @@
 package org.dromara.content.page;
 
 import org.dromara.content.base.BaseIntegrationTest;
-import org.dromara.content.domain.Feed;
+import org.dromara.content.domain.entity.Feed;
 import org.dromara.content.domain.dto.InteractionDTO;
 import org.dromara.content.mapper.FeedMapper;
 import org.junit.jupiter.api.DisplayName;

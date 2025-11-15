@@ -1,8 +1,8 @@
 package org.dromara.content.page;
 
 import org.dromara.content.base.BaseIntegrationTest;
-import org.dromara.content.domain.Feed;
-import org.dromara.content.domain.Topic;
+import org.dromara.content.domain.entity.Feed;
+import org.dromara.content.domain.entity.Topic;
 import org.dromara.content.domain.dto.FeedPublishDTO;
 import org.dromara.content.mapper.FeedMapper;
 import org.dromara.content.mapper.TopicMapper;

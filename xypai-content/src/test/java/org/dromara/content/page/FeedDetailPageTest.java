@@ -1,10 +1,10 @@
 package org.dromara.content.page;
 
 import org.dromara.content.base.BaseIntegrationTest;
-import org.dromara.content.domain.Comment;
-import org.dromara.content.domain.Feed;
-import org.dromara.content.domain.Report;
-import org.dromara.content.domain.dto.CommentDTO;
+import org.dromara.content.domain.entity.Comment;
+import org.dromara.content.domain.entity.Feed;
+import org.dromara.content.domain.entity.Report;
+import org.dromara.content.domain.dto.CommentPublishDTO;
 import org.dromara.content.domain.dto.ReportDTO;
 import org.dromara.content.mapper.CommentMapper;
 import org.dromara.content.mapper.FeedMapper;
@@ -337,7 +337,7 @@ public class FeedDetailPageTest extends BaseIntegrationTest {
         @Test
         @DisplayName("Should post top-level comment successfully")
         void shouldPostComment_whenValidData() throws Exception {
-            CommentDTO dto = testDataFactory.createCommentDTO(testFeed.getId(), "New comment content");
+            CommentPublishDTO dto = testDataFactory.createCommentPublishDTO(testFeed.getId(), "New comment content");
 
             mockMvc.perform(post("/api/v1/content/comment")
                     .header("Satoken", getAuthHeader())
@@ -358,7 +358,7 @@ public class FeedDetailPageTest extends BaseIntegrationTest {
         @Test
         @DisplayName("Should post reply to comment successfully")
         void shouldPostReply_whenValidParentId() throws Exception {
-            CommentDTO dto = testDataFactory.createReplyDTO(
+            CommentPublishDTO dto = testDataFactory.createReplyDTO(
                 testFeed.getId(),
                 "Reply content",
                 testComment.getId(),
@@ -382,7 +382,7 @@ public class FeedDetailPageTest extends BaseIntegrationTest {
         @Test
         @DisplayName("Should require authentication to post comment")
         void shouldRequireAuth_whenPostComment() throws Exception {
-            CommentDTO dto = testDataFactory.createCommentDTO(testFeed.getId(), "Comment");
+            CommentPublishDTO dto = testDataFactory.createCommentPublishDTO(testFeed.getId(), "Comment");
 
             mockMvc.perform(post("/api/v1/content/comment")
                     // No Satoken header
@@ -395,7 +395,7 @@ public class FeedDetailPageTest extends BaseIntegrationTest {
         @DisplayName("Should validate comment content (1-500 chars)")
         void shouldValidateContentLength_whenPostComment() throws Exception {
             // Empty content
-            CommentDTO dto1 = testDataFactory.createCommentDTO(testFeed.getId(), "");
+            CommentPublishDTO dto1 = testDataFactory.createCommentPublishDTO(testFeed.getId(), "");
             mockMvc.perform(post("/api/v1/content/comment")
                     .header("Satoken", getAuthHeader())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -405,7 +405,7 @@ public class FeedDetailPageTest extends BaseIntegrationTest {
 
             // Too long content
             String longContent = "a".repeat(501);
-            CommentDTO dto2 = testDataFactory.createCommentDTO(testFeed.getId(), longContent);
+            CommentPublishDTO dto2 = testDataFactory.createCommentPublishDTO(testFeed.getId(), longContent);
             mockMvc.perform(post("/api/v1/content/comment")
                     .header("Satoken", getAuthHeader())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -418,7 +418,7 @@ public class FeedDetailPageTest extends BaseIntegrationTest {
         void shouldIncrementCommentCount_whenPostComment() throws Exception {
             int initialCount = testFeed.getCommentCount();
 
-            CommentDTO dto = testDataFactory.createCommentDTO(testFeed.getId(), "New comment");
+            CommentPublishDTO dto = testDataFactory.createCommentPublishDTO(testFeed.getId(), "New comment");
 
             mockMvc.perform(post("/api/v1/content/comment")
                     .header("Satoken", getAuthHeader())
