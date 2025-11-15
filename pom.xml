@@ -382,11 +382,13 @@
         <module>ruoyi-example</module>
 
         <!-- XYPai 业务模块 -->
+        <module>xypai-common</module>
         <module>xypai-auth</module>
         <module>xypai-user</module>
         <module>xypai-chat</module>
         <module>xypai-content</module>
-        <module>xypai-trade</module>
+        <module>xypai-order</module>
+        <module>xypai-payment</module>
     </modules>
     <packaging>pom</packaging>
 

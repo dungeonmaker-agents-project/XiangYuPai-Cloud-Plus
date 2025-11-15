@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>xypai-chat</artifactId>
-    <description>XiangYuPai Chat & Messaging Service</description>
+    <description>XiangYuPai Chat  Messaging Service</description>
 
     <dependencies>
         <!-- Core Dependencies -->
