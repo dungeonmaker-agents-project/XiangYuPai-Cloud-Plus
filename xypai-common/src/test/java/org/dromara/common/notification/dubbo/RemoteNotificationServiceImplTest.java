@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("通知服务RPC实现测试")
-class RemoteNotificationServiceImplTest {
+public class RemoteNotificationServiceImplTest {
 
     @Mock
     private INotificationService notificationService;

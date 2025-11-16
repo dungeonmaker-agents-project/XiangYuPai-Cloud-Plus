@@ -12,6 +12,7 @@ import org.dromara.content.mapper.TopicMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -121,8 +122,8 @@ public class TestDataFactory {
             .status(0)
             .locationName("Test Location")
             .locationAddress("Test Address")
-            .longitude(longitude)
-            .latitude(latitude)
+            .longitude(BigDecimal.valueOf(longitude))
+            .latitude(BigDecimal.valueOf(latitude))
             .likeCount(0)
             .commentCount(0)
             .shareCount(0)
@@ -243,15 +244,15 @@ public class TestDataFactory {
         FeedPublishDTO dto = createFeedPublishDTO(content);
         dto.setLocationName("Test Location");
         dto.setLocationAddress("Test Address");
-        dto.setLatitude(lat);
-        dto.setLongitude(lon);
+        dto.setLatitude(BigDecimal.valueOf(lat));
+        dto.setLongitude(BigDecimal.valueOf(lon));
         return dto;
     }
 
     /**
      * Create CommentPublishDTO for testing
      */
-    public CommentPublishDTO createCommentDTO(Long feedId, String content) {
+    public CommentPublishDTO createCommentPublishDTO(Long feedId, String content) {
         CommentPublishDTO dto = new CommentPublishDTO();
         dto.setFeedId(feedId);
         dto.setContent(content);
@@ -262,7 +263,7 @@ public class TestDataFactory {
      * Create CommentPublishDTO for reply
      */
     public CommentPublishDTO createReplyDTO(Long feedId, String content, Long parentId, Long replyToUserId) {
-        CommentPublishDTO dto = createCommentDTO(feedId, content);
+        CommentPublishDTO dto = createCommentPublishDTO(feedId, content);
         dto.setParentId(parentId);
         dto.setReplyToUserId(replyToUserId);
         return dto;

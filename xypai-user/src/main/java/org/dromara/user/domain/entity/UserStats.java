@@ -68,6 +68,30 @@ public class UserStats implements Serializable {
     private Integer favoritesCount;
 
     /**
+     * 动态数(moments)
+     */
+    @TableField("moments_count")
+    private Integer momentsCount;
+
+    /**
+     * 收藏数(collections)
+     */
+    @TableField("collections_count")
+    private Integer collectionsCount;
+
+    /**
+     * 技能数
+     */
+    @TableField("skills_count")
+    private Integer skillsCount;
+
+    /**
+     * 订单数
+     */
+    @TableField("orders_count")
+    private Integer ordersCount;
+
+    /**
      * 创建时间
      */
     @TableField(value = "created_at", fill = FieldFill.INSERT)

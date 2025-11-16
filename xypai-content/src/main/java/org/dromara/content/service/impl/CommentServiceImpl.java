@@ -199,7 +199,7 @@ public class CommentServiceImpl implements ICommentService {
         if (comment.getParentId() == null && comment.getReplyCount() > 0) {
             LambdaQueryWrapper<Comment> replyWrapper = new LambdaQueryWrapper<>();
             replyWrapper.eq(Comment::getParentId, comment.getId())
-                       .orderByDesc(Comment::getCreatedAt())
+                       .orderByDesc(Comment::getCreatedAt)
                        .last("LIMIT 3");
             List<Comment> replies = commentMapper.selectList(replyWrapper);
 

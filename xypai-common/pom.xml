@@ -69,10 +69,24 @@
             <artifactId>ruoyi-common-oss</artifactId>
         </dependency>
 
+        <!-- Excel -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-excel</artifactId>
+        </dependency>
+
+        <!-- EasyExcel for Excel export annotations -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>${easyexcel.version}</version>
+        </dependency>
+
         <!-- API接口 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>xypai-api-common</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- HTTP客户端 -->
@@ -109,6 +123,13 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>spring-mock-mvc</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit Platform Suite for test organization -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite-api</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

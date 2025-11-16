@@ -34,6 +34,18 @@ public class User implements Serializable {
     private Long userId;
 
     /**
+     * 手机号
+     */
+    @TableField("mobile")
+    private String mobile;
+
+    /**
+     * 国家代码
+     */
+    @TableField("country_code")
+    private String countryCode;
+
+    /**
      * 昵称（2-20字符）
      */
     @TableField("nickname")

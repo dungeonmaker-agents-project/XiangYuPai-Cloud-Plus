@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("位置服务RPC实现测试")
-class RemoteLocationServiceImplTest {
+public class RemoteLocationServiceImplTest {
 
     @Mock
     private ILocationService locationService;

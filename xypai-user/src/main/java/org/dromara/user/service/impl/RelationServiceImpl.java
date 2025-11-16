@@ -129,7 +129,7 @@ public class RelationServiceImpl extends ServiceImpl<UserRelationMapper, UserRel
             voList.add(vo);
         }
 
-        return TableDataInfo.build(voList, userPage.getTotal());
+        return new TableDataInfo<>(voList, userPage.getTotal());
     }
 
     @Override
@@ -166,7 +166,7 @@ public class RelationServiceImpl extends ServiceImpl<UserRelationMapper, UserRel
             voList.add(vo);
         }
 
-        return TableDataInfo.build(voList, userPage.getTotal());
+        return new TableDataInfo<>(voList, userPage.getTotal());
     }
 
     @Override

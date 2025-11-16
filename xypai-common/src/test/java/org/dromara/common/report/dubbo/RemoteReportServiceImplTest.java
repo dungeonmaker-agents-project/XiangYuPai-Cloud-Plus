@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("举报服务RPC实现测试")
-class RemoteReportServiceImplTest {
+public class RemoteReportServiceImplTest {
 
     @Mock
     private IReportService reportService;

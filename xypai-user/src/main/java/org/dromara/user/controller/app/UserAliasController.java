@@ -9,8 +9,8 @@ import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.user.domain.vo.UserProfileVo;
 import org.dromara.user.domain.vo.UserRelationVo;
-import org.dromara.user.service.IProfileService;
 import org.dromara.user.service.IRelationService;
+import org.dromara.user.service.IUserService;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserAliasController {
 
     private final IRelationService relationService;
-    private final IProfileService profileService;
+    private final IUserService userService;
 
     @Operation(summary = "Get fans list", description = "已废弃：请使用 GET /api/user/relation/fans")
     @GetMapping("/fans")
@@ -66,6 +66,6 @@ public class UserAliasController {
     @Operation(summary = "Get user profile", description = "已废弃：请使用 GET /api/user/profile/other/{userId}")
     @GetMapping("/{userId}/profile")
     public R<UserProfileVo> getUserProfile(@PathVariable Long userId) {
-        return profileService.getUserProfile(userId);
+        return userService.getUserProfile(userId);
     }
 }

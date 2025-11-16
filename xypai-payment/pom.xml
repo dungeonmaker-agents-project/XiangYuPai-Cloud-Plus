@@ -99,12 +99,14 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-payment</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- User API (for user info) -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-user</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- Test Dependencies -->
@@ -117,7 +119,7 @@
     </dependencies>
 
     <build>
-        <finalName>${project.artifactId}</finalactId>
+        <finalName>${project.artifactId}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

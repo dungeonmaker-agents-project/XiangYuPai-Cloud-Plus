@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("媒体服务RPC实现测试")
-class RemoteMediaServiceImplTest {
+public class RemoteMediaServiceImplTest {
 
     @Mock
     private IMediaService mediaService;

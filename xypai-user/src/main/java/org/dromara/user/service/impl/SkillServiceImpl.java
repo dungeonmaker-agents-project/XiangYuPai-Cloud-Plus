@@ -332,7 +332,7 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
             .map(this::buildSkillVo)
             .collect(Collectors.toList());
 
-        return TableDataInfo.build(voList, skillPage.getTotal());
+        return new TableDataInfo<>(voList, skillPage.getTotal());
     }
 
     @Override

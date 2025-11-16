@@ -88,7 +88,7 @@ public class LocationServiceImpl implements ILocationService {
 
         log.info("找到 {} 个附近地点", voList.size());
 
-        return TableDataInfo.build(voList, (long) voList.size());
+        return TableDataInfo.build(voList);
     }
 
     @Override

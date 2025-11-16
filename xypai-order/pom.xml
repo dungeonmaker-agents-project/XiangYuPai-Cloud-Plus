@@ -93,18 +93,21 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-order</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- Payment API (for remote calls to payment service) -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-payment</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- User API (for user info) -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-user</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- Test Dependencies -->

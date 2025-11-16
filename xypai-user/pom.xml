@@ -99,12 +99,21 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-user</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- App User API (for authentication and user management) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>xypai-api-appuser</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- Content API (for remote calls to content service) -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-content</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- Test Dependencies -->

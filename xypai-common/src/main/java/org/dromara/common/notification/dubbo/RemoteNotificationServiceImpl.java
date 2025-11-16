@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.dromara.common.api.notification.RemoteNotificationService;
 import org.dromara.common.core.domain.R;
-import org.dromara.common.notification.domain.Notification;
+import org.dromara.common.notification.domain.entity.Notification;
 import org.dromara.common.notification.domain.bo.NotificationCreateBo;
 import org.dromara.common.notification.domain.vo.UnreadCountVo;
 import org.dromara.common.notification.mapper.NotificationMapper;
@@ -51,8 +51,8 @@ public class RemoteNotificationServiceImpl implements RemoteNotificationService 
             createBo.setUserId(userId);
             createBo.setFromUserId(fromUserId);
             createBo.setType("like");
-            createBo.setContentType(contentType);
-            createBo.setContentId(contentId);
+            createBo.setBizType(contentType);
+            createBo.setBizId(contentId);
             createBo.setTitle("点赞通知");
             createBo.setContent("有人赞了你的" + getContentTypeName(contentType));
 
@@ -83,8 +83,8 @@ public class RemoteNotificationServiceImpl implements RemoteNotificationService 
             createBo.setUserId(userId);
             createBo.setFromUserId(fromUserId);
             createBo.setType("comment");
-            createBo.setContentType(contentType);
-            createBo.setContentId(contentId);
+            createBo.setBizType(contentType);
+            createBo.setBizId(contentId);
             createBo.setTitle("评论通知");
             createBo.setContent("有人评论了你的" + getContentTypeName(contentType) + ": " + summary);
 
@@ -173,8 +173,8 @@ public class RemoteNotificationServiceImpl implements RemoteNotificationService 
             NotificationCreateBo createBo = new NotificationCreateBo();
             createBo.setUserId(userId);
             createBo.setType("activity");
-            createBo.setContentType("activity");
-            createBo.setContentId(activityId);
+            createBo.setBizType("activity");
+            createBo.setBizId(activityId);
             createBo.setTitle(title);
             createBo.setContent(content);
 

@@ -80,10 +80,12 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-user</artifactId>
+            <version>${revision}</version>
         </dependency>
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>xypai-api-chat</artifactId>
+            <version>${revision}</version>
         </dependency>
 
         <!-- Testing -->

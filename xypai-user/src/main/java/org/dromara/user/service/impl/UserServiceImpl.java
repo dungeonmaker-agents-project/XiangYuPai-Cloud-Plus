@@ -104,7 +104,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         // Get user profile
         R<UserProfileVo> result = getUserProfile(targetUserId);
-        if (!result.isSuccess()) {
+        if (!R.isSuccess(result)) {
             return result;
         }
 

@@ -41,6 +41,55 @@
                 <version>${revision}</version>
             </dependency>
 
+            <!-- 订单接口 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-api-order</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- 支付接口 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-api-payment</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- 用户接口 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-api-user</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- 内容接口 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>ruoyi-api-content</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- XYPai App用户接口 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>xypai-api-appuser</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- XYPai 通用接口 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>xypai-api-common</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
+            <!-- XYPai 聊天接口 -->
+            <dependency>
+                <groupId>org.dromara</groupId>
+                <artifactId>xypai-api-chat</artifactId>
+                <version>${revision}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>

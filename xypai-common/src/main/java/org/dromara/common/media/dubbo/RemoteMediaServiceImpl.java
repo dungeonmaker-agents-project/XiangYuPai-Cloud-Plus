@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.dromara.common.api.media.RemoteMediaService;
 import org.dromara.common.core.domain.R;
-import org.dromara.common.media.domain.MediaFile;
+import org.dromara.common.media.domain.entity.MediaFile;
 import org.dromara.common.media.domain.vo.MediaUploadResultVo;
 import org.dromara.common.media.mapper.MediaFileMapper;
 import org.dromara.common.media.service.IMediaService;
@@ -109,7 +109,7 @@ public class RemoteMediaServiceImpl implements RemoteMediaService {
             int successCount = 0;
             for (Long fileId : fileIds) {
                 R<Boolean> result = deleteFile(fileId, userId);
-                if (result.isSuccess() && result.getData()) {
+                if (R.isSuccess(result) && result.getData()) {
                     successCount++;
                 }
             }

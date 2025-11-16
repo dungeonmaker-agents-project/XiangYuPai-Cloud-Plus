@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -103,7 +104,13 @@ public class MediaServiceImpl implements IMediaService {
 
             // 6. 上传到OSS
             OssClient ossClient = OssFactory.instance();
-            UploadResult uploadResult = ossClient.upload(file.getBytes(), filePath, contentType);
+            byte[] fileBytes = file.getBytes();
+            UploadResult uploadResult = ossClient.upload(
+                new ByteArrayInputStream(fileBytes),
+                filePath,
+                (long) fileBytes.length,
+                contentType
+            );
 
             // 7. 保存媒体记录
             MediaFile mediaFile = new MediaFile();
