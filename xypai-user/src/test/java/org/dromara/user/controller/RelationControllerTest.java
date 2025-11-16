@@ -140,15 +140,13 @@ public class RelationControllerTest extends BaseTest {
                 .userId(2001L)
                 .nickname("粉丝1")
                 .avatar("https://cdn.example.com/avatar1.jpg")
-                .isFollowing(false) // 未回关
-                .isMutualFollow(false)
+                .followStatus("none") // 未回关
                 .build(),
             UserRelationVo.builder()
                 .userId(2002L)
                 .nickname("粉丝2")
                 .avatar("https://cdn.example.com/avatar2.jpg")
-                .isFollowing(true) // 已回关
-                .isMutualFollow(true)
+                .followStatus("mutual") // 已回关
                 .build()
         );
 
@@ -168,10 +166,9 @@ public class RelationControllerTest extends BaseTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.total").value(2))
             .andExpect(jsonPath("$.rows[0].userId").value(2001))
-            .andExpect(jsonPath("$.rows[0].isFollowing").value(false))
+            .andExpect(jsonPath("$.rows[0].followStatus").value("none"))
             .andExpect(jsonPath("$.rows[1].userId").value(2002))
-            .andExpect(jsonPath("$.rows[1].isFollowing").value(true))
-            .andExpect(jsonPath("$.rows[1].isMutualFollow").value(true));
+            .andExpect(jsonPath("$.rows[1].followStatus").value("mutual"));
 
         verify(relationService, times(1)).getFansList(eq(TEST_USER_ID), isNull(), any(PageQuery.class));
     }
@@ -185,7 +182,7 @@ public class RelationControllerTest extends BaseTest {
             UserRelationVo.builder()
                 .userId(2003L)
                 .nickname("张三")
-                .isFollowing(false)
+                .followStatus("none")
                 .build()
         );
 
@@ -261,15 +258,13 @@ public class RelationControllerTest extends BaseTest {
                 .userId(2004L)
                 .nickname("关注1")
                 .avatar("https://cdn.example.com/avatar3.jpg")
-                .isFollowing(true)
-                .isMutualFollow(true) // 互相关注
+                .followStatus("mutual") // 互相关注
                 .build(),
             UserRelationVo.builder()
                 .userId(2005L)
                 .nickname("关注2")
                 .avatar("https://cdn.example.com/avatar4.jpg")
-                .isFollowing(true)
-                .isMutualFollow(false) // 单向关注
+                .followStatus("following") // 单向关注
                 .build()
         );
 
@@ -289,9 +284,9 @@ public class RelationControllerTest extends BaseTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.total").value(2))
             .andExpect(jsonPath("$.rows[0].userId").value(2004))
-            .andExpect(jsonPath("$.rows[0].isMutualFollow").value(true))
+            .andExpect(jsonPath("$.rows[0].followStatus").value("mutual"))
             .andExpect(jsonPath("$.rows[1].userId").value(2005))
-            .andExpect(jsonPath("$.rows[1].isMutualFollow").value(false));
+            .andExpect(jsonPath("$.rows[1].followStatus").value("following"));
 
         verify(relationService, times(1)).getFollowingList(eq(TEST_USER_ID), isNull(), any(PageQuery.class));
     }
@@ -305,7 +300,7 @@ public class RelationControllerTest extends BaseTest {
             UserRelationVo.builder()
                 .userId(2006L)
                 .nickname("李四")
-                .isFollowing(true)
+                .followStatus("following")
                 .build()
         );
 
@@ -438,12 +433,9 @@ public class RelationControllerTest extends BaseTest {
         // Given
         UserReportDto dto = new UserReportDto();
         dto.setReportedUserId(TEST_OTHER_USER_ID);
-        dto.setReportType(1); // 1=违规内容
-        dto.setReportReason("发布违规内容");
-        dto.setReportImages(Arrays.asList(
-            "https://cdn.example.com/evidence1.jpg",
-            "https://cdn.example.com/evidence2.jpg"
-        ));
+        dto.setReason("spam"); // spam, abuse, inappropriate, fraud, other
+        dto.setDescription("发布违规内容");
+        dto.setEvidence("https://cdn.example.com/evidence1.jpg,https://cdn.example.com/evidence2.jpg");
 
         when(relationService.reportUser(eq(TEST_USER_ID), any(UserReportDto.class)))
             .thenReturn(R.ok());
@@ -465,8 +457,8 @@ public class RelationControllerTest extends BaseTest {
         // Given: 尝试举报自己
         UserReportDto dto = new UserReportDto();
         dto.setReportedUserId(TEST_USER_ID);
-        dto.setReportType(1);
-        dto.setReportReason("测试");
+        dto.setReason("spam");
+        dto.setDescription("测试");
 
         when(relationService.reportUser(eq(TEST_USER_ID), any(UserReportDto.class)))
             .thenReturn(R.fail("不能举报自己"));

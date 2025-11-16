@@ -7,7 +7,9 @@ import org.dromara.user.domain.dto.UpdateBirthdayDto;
 import org.dromara.user.domain.dto.UpdateGenderDto;
 import org.dromara.user.domain.dto.UpdateNicknameDto;
 import org.dromara.user.domain.dto.UserUpdateDto;
+import org.dromara.user.domain.vo.PrivacyVo;
 import org.dromara.user.domain.vo.UserProfileVo;
+import org.dromara.user.domain.vo.UserStatsVo;
 import org.dromara.user.service.IUserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,14 +50,18 @@ public class ProfileControllerTest extends BaseTest {
     @DisplayName("TC-PROFILE-001: 获取个人主页头部信息 - 成功")
     public void testGetProfileHeader_Success() throws Exception {
         // Given: 准备测试数据
+        UserStatsVo stats = UserStatsVo.builder()
+            .followingCount(100)
+            .fansCount(200)
+            .likesCount(300)
+            .build();
+
         UserProfileVo mockProfile = UserProfileVo.builder()
             .userId(TEST_USER_ID)
             .nickname("测试用户")
             .avatar("https://cdn.example.com/avatar.jpg")
             .bio("这是我的个人简介")
-            .followingCount(100)
-            .fansCount(200)
-            .likesCount(300)
+            .stats(stats)
             .build();
 
         when(userService.getUserProfile(TEST_USER_ID)).thenReturn(R.ok(mockProfile));
@@ -68,8 +74,8 @@ public class ProfileControllerTest extends BaseTest {
             .andExpect(jsonPath("$.code").value(200))
             .andExpect(jsonPath("$.data.userId").value(TEST_USER_ID))
             .andExpect(jsonPath("$.data.nickname").value("测试用户"))
-            .andExpect(jsonPath("$.data.followingCount").value(100))
-            .andExpect(jsonPath("$.data.fansCount").value(200));
+            .andExpect(jsonPath("$.data.stats.followingCount").value(100))
+            .andExpect(jsonPath("$.data.stats.fansCount").value(200));
 
         verify(userService, times(1)).getUserProfile(TEST_USER_ID);
     }
@@ -78,13 +84,17 @@ public class ProfileControllerTest extends BaseTest {
     @DisplayName("TC-PROFILE-002: 获取他人主页 - 成功")
     public void testGetOtherUserProfile_Success() throws Exception {
         // Given
-        UserProfileVo mockProfile = UserProfileVo.builder()
-            .userId(TEST_OTHER_USER_ID)
-            .nickname("其他用户")
-            .isFollowing(false)
+        PrivacyVo privacy = PrivacyVo.builder()
             .canViewProfile(true)
             .canViewMoments(true)
             .canViewSkills(true)
+            .build();
+
+        UserProfileVo mockProfile = UserProfileVo.builder()
+            .userId(TEST_OTHER_USER_ID)
+            .nickname("其他用户")
+            .followStatus("none")
+            .privacy(privacy)
             .build();
 
         when(userService.getOtherUserProfile(TEST_USER_ID, TEST_OTHER_USER_ID))
@@ -97,8 +107,8 @@ public class ProfileControllerTest extends BaseTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(200))
             .andExpect(jsonPath("$.data.userId").value(TEST_OTHER_USER_ID))
-            .andExpect(jsonPath("$.data.isFollowing").value(false))
-            .andExpect(jsonPath("$.data.canViewProfile").value(true));
+            .andExpect(jsonPath("$.data.followStatus").value("none"))
+            .andExpect(jsonPath("$.data.privacy.canViewProfile").value(true));
 
         verify(userService, times(1)).getOtherUserProfile(TEST_USER_ID, TEST_OTHER_USER_ID);
     }
@@ -107,13 +117,17 @@ public class ProfileControllerTest extends BaseTest {
     @DisplayName("TC-PROFILE-003: 获取他人主页 - 隐私限制")
     public void testGetOtherUserProfile_PrivacyRestricted() throws Exception {
         // Given: 用户设置了隐私限制
-        UserProfileVo mockProfile = UserProfileVo.builder()
-            .userId(TEST_OTHER_USER_ID)
-            .nickname("隐私用户")
-            .isFollowing(false)
+        PrivacyVo privacy = PrivacyVo.builder()
             .canViewProfile(false)
             .canViewMoments(false)
             .canViewSkills(false)
+            .build();
+
+        UserProfileVo mockProfile = UserProfileVo.builder()
+            .userId(TEST_OTHER_USER_ID)
+            .nickname("隐私用户")
+            .followStatus("none")
+            .privacy(privacy)
             .build();
 
         when(userService.getOtherUserProfile(TEST_USER_ID, TEST_OTHER_USER_ID))
@@ -124,9 +138,9 @@ public class ProfileControllerTest extends BaseTest {
                 .header(AUTHORIZATION_HEADER, getAuthHeader())
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.canViewProfile").value(false))
-            .andExpect(jsonPath("$.data.canViewMoments").value(false))
-            .andExpect(jsonPath("$.data.canViewSkills").value(false));
+            .andExpect(jsonPath("$.data.privacy.canViewProfile").value(false))
+            .andExpect(jsonPath("$.data.privacy.canViewMoments").value(false))
+            .andExpect(jsonPath("$.data.privacy.canViewSkills").value(false));
     }
 
     // ==================== 页面02: 编辑资料测试 ====================
@@ -138,13 +152,13 @@ public class ProfileControllerTest extends BaseTest {
         UserProfileVo mockProfile = UserProfileVo.builder()
             .userId(TEST_USER_ID)
             .nickname("测试用户")
-            .gender(1)
+            .gender("male")
             .birthday(LocalDate.of(1995, 5, 15))
             .residence("北京市朝阳区")
             .height(175)
             .weight(65)
             .occupation("软件工程师")
-            .wechatId("test_wechat")
+            .wechat("test_wechat")
             .bio("个人简介")
             .build();
 
@@ -157,7 +171,7 @@ public class ProfileControllerTest extends BaseTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value(200))
             .andExpect(jsonPath("$.data.nickname").value("测试用户"))
-            .andExpect(jsonPath("$.data.gender").value(1))
+            .andExpect(jsonPath("$.data.gender").value("male"))
             .andExpect(jsonPath("$.data.height").value(175));
     }
 
@@ -204,7 +218,7 @@ public class ProfileControllerTest extends BaseTest {
     public void testUpdateGender_Success() throws Exception {
         // Given
         UpdateGenderDto dto = new UpdateGenderDto();
-        dto.setGender(1); // 1=男, 2=女, 0=未知
+        dto.setGender("male"); // male, female, other
 
         when(userService.updateGender(eq(TEST_USER_ID), any(UpdateGenderDto.class)))
             .thenReturn(R.ok());
@@ -326,7 +340,7 @@ public class ProfileControllerTest extends BaseTest {
     public void testUpdateWechat_Success() throws Exception {
         // Given
         UserUpdateDto dto = new UserUpdateDto();
-        dto.setWechatId("new_wechat_id");
+        dto.setWechat("new_wechat_id");
 
         when(userService.updateUserProfile(eq(TEST_USER_ID), any(UserUpdateDto.class)))
             .thenReturn(R.ok());

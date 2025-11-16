@@ -51,12 +51,13 @@ public class SkillControllerTest extends BaseTest {
     public void testCreateOnlineSkill_Success() throws Exception {
         // Given: 准备线上技能数据
         OnlineSkillCreateDto dto = new OnlineSkillCreateDto();
-        dto.setSkillType(1); // 1=线上
-        dto.setGameId("wzry");
+        dto.setCoverImage("https://cdn.example.com/cover.jpg");
         dto.setGameName("王者荣耀");
-        dto.setRank("王者");
-        dto.setPricePerHour(new BigDecimal("50.00"));
+        dto.setGameRank("王者");
+        dto.setSkillName("王者带飞");
         dto.setDescription("5年王者经验,可带上分");
+        dto.setPrice(new BigDecimal("50.00"));
+        dto.setServiceHours(new BigDecimal("1.0"));
         dto.setImages(Arrays.asList(
             "https://cdn.example.com/skill1.jpg",
             "https://cdn.example.com/skill2.jpg"
@@ -83,16 +84,19 @@ public class SkillControllerTest extends BaseTest {
     public void testCreateOfflineSkill_Success() throws Exception {
         // Given: 准备线下技能数据
         OfflineSkillCreateDto dto = new OfflineSkillCreateDto();
-        dto.setSkillType(2); // 2=线下
-        dto.setServiceTypeId("photography");
-        dto.setServiceTypeName("摄影服务");
-        dto.setTitle("专业摄影师 - 婚礼/活动拍摄");
-        dto.setPricePerService(new BigDecimal("800.00"));
+        dto.setCoverImage("https://cdn.example.com/cover.jpg");
+        dto.setServiceType("photography");
+        dto.setSkillName("专业摄影师 - 婚礼/活动拍摄");
         dto.setDescription("10年摄影经验,擅长人像和风景");
-        dto.setServiceLocation("北京市朝阳区");
-        dto.setLatitude(new BigDecimal("39.9042"));
-        dto.setLongitude(new BigDecimal("116.4074"));
-        dto.setAvailableTimes(Arrays.asList("周末", "节假日"));
+        dto.setPrice(new BigDecimal("800.00"));
+
+        OfflineSkillCreateDto.LocationDto location = new OfflineSkillCreateDto.LocationDto();
+        location.setAddress("北京市朝阳区");
+        location.setLatitude(new BigDecimal("39.9042"));
+        location.setLongitude(new BigDecimal("116.4074"));
+        dto.setLocation(location);
+
+        dto.setAvailableTimes(Arrays.asList());
         dto.setPromises(Arrays.asList("满意为止", "提供后期修图"));
         dto.setImages(Arrays.asList("https://cdn.example.com/photo1.jpg"));
 
@@ -117,9 +121,8 @@ public class SkillControllerTest extends BaseTest {
     public void testCreateSkill_InvalidPrice() throws Exception {
         // Given: 无效的价格
         OnlineSkillCreateDto dto = new OnlineSkillCreateDto();
-        dto.setSkillType(1);
-        dto.setGameId("wzry");
-        dto.setPricePerHour(new BigDecimal("-10.00")); // 负数价格
+        dto.setGameName("王者荣耀");
+        dto.setPrice(new BigDecimal("-10.00")); // 负数价格
 
         // When & Then
         mockMvc.perform(MockMvcRequestBuilders.post("/api/user/skills/online")
@@ -136,9 +139,12 @@ public class SkillControllerTest extends BaseTest {
     public void testCreateSkill_TooManyImages() throws Exception {
         // Given: 超过9张图片
         OnlineSkillCreateDto dto = new OnlineSkillCreateDto();
-        dto.setSkillType(1);
-        dto.setGameId("wzry");
-        dto.setPricePerHour(new BigDecimal("50.00"));
+        dto.setGameName("王者荣耀");
+        dto.setGameRank("王者");
+        dto.setSkillName("测试技能");
+        dto.setDescription("这是一个测试技能描述");
+        dto.setPrice(new BigDecimal("50.00"));
+        dto.setServiceHours(new BigDecimal("1.0"));
         dto.setImages(Arrays.asList(
             "url1", "url2", "url3", "url4", "url5",
             "url6", "url7", "url8", "url9", "url10" // 10张,超过限制
@@ -281,12 +287,11 @@ public class SkillControllerTest extends BaseTest {
         SkillDetailVo mockDetail = SkillDetailVo.builder()
             .skillId(TEST_SKILL_ID)
             .userId(TEST_USER_ID)
-            .skillType(1)
+            .skillType("online")
             .gameName("王者荣耀")
-            .rank("王者")
-            .pricePerHour(new BigDecimal("50.00"))
+            .gameRank("王者")
+            .price(new BigDecimal("50.00"))
             .description("技能描述")
-            .viewCount(100)
             .orderCount(20)
             .rating(new BigDecimal("4.8"))
             .isOnline(true)
@@ -315,16 +320,16 @@ public class SkillControllerTest extends BaseTest {
         List<SkillVo> skills = Arrays.asList(
             SkillVo.builder()
                 .skillId(3001L)
-                .skillType(1)
+                .skillType("online")
                 .gameName("王者荣耀")
-                .pricePerHour(new BigDecimal("50.00"))
+                .price(new BigDecimal("50.00"))
                 .isOnline(true)
                 .build(),
             SkillVo.builder()
                 .skillId(3002L)
-                .skillType(2)
-                .serviceTypeName("摄影服务")
-                .pricePerService(new BigDecimal("800.00"))
+                .skillType("offline")
+                .serviceType("摄影服务")
+                .price(new BigDecimal("800.00"))
                 .isOnline(false)
                 .build()
         );
@@ -358,9 +363,9 @@ public class SkillControllerTest extends BaseTest {
         List<SkillVo> skills = Arrays.asList(
             SkillVo.builder()
                 .skillId(3003L)
-                .skillType(1)
+                .skillType("online")
                 .gameName("和平精英")
-                .pricePerHour(new BigDecimal("40.00"))
+                .price(new BigDecimal("40.00"))
                 .isOnline(true)
                 .build()
         );
@@ -396,15 +401,15 @@ public class SkillControllerTest extends BaseTest {
         List<SkillVo> nearbySkills = Arrays.asList(
             SkillVo.builder()
                 .skillId(3004L)
-                .skillType(2)
-                .serviceTypeName("家政服务")
-                .distance(1200) // 1.2公里
+                .skillType("offline")
+                .serviceType("家政服务")
+                .distance(new BigDecimal("1.2")) // 1.2公里
                 .build(),
             SkillVo.builder()
                 .skillId(3005L)
-                .skillType(2)
-                .serviceTypeName("维修服务")
-                .distance(3500) // 3.5公里
+                .skillType("offline")
+                .serviceType("维修服务")
+                .distance(new BigDecimal("3.5")) // 3.5公里
                 .build()
         );
 
@@ -426,8 +431,8 @@ public class SkillControllerTest extends BaseTest {
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.total").value(2))
-            .andExpect(jsonPath("$.rows[0].distance").value(1200))
-            .andExpect(jsonPath("$.rows[1].distance").value(3500));
+            .andExpect(jsonPath("$.rows[0].distance").value(1.2))
+            .andExpect(jsonPath("$.rows[1].distance").value(3.5));
 
         verify(skillService, times(1))
             .searchNearbySkills(eq(latitude), eq(longitude), eq(radiusMeters), any(PageQuery.class));
