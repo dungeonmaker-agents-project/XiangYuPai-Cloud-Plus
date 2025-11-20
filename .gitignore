@@ -47,6 +47,7 @@ nbdist/
 .flattened-pom.xml
 
 ######################################################################
+logs/
 # Docker Data Directories
 # 忽略 Docker 容器产生的数据文件，但保留配置文件
 script/docker/mysql/data/
