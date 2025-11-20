@@ -43,4 +43,10 @@ public class UserRelationVo {
 
     @Schema(description = "Fans count")
     private Integer fansCount;
+
+    @Schema(description = "Is following")
+    private Boolean isFollowing;
+
+    @Schema(description = "Is mutual follow")
+    private Boolean isMutualFollow;
 }

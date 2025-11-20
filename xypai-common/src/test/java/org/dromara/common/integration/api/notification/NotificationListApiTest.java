@@ -40,10 +40,10 @@ class NotificationListApiTest extends ApiTestBase {
         assertThat(response.jsonPath().getInt("code")).isEqualTo(200);
 
         // 验证数据结构
-        assertThat(response.jsonPath().get("data")).isNotNull();
-        assertThat(response.jsonPath().get("data.type")).isEqualTo("like");
-        assertThat(response.jsonPath().get("data.total")).isNotNull();
-        assertThat(response.jsonPath().get("data.list")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.type")).isEqualTo("like");
+        assertThat((Object) response.jsonPath().get("data.total")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.list")).isNotNull();
     }
 
     /**

@@ -18,6 +18,18 @@ import java.util.List;
 @Schema(description = "Create offline skill request")
 public class OfflineSkillCreateDto {
 
+    @Schema(description = "Skill type")
+    private Integer skillType;
+
+    @Schema(description = "Service type ID")
+    private String serviceTypeId;
+
+    @Schema(description = "Service type name")
+    private String serviceTypeName;
+
+    @Schema(description = "Title")
+    private String title;
+
     @Schema(description = "Cover image URL")
     private String coverImage;
 
@@ -39,6 +51,18 @@ public class OfflineSkillCreateDto {
     @DecimalMin(value = "0.01", message = "价格必须大于0")
     @Schema(description = "Price")
     private BigDecimal price;
+
+    @Schema(description = "Price per service")
+    private BigDecimal pricePerService;
+
+    @Schema(description = "Service location (address string)")
+    private String serviceLocation;
+
+    @Schema(description = "Latitude")
+    private BigDecimal latitude;
+
+    @Schema(description = "Longitude")
+    private BigDecimal longitude;
 
     @NotNull(message = "服务地点不能为空")
     @Schema(description = "Service location")

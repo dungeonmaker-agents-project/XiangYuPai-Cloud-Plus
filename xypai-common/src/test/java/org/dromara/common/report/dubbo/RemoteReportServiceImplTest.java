@@ -66,7 +66,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -84,7 +84,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
 
         // Verify
@@ -102,7 +102,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -121,7 +121,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -141,7 +141,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
     }
 
@@ -157,7 +157,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
     }
 
@@ -172,7 +172,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -190,7 +190,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
 
         // Verify
@@ -208,7 +208,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEqualTo(5);
 
         // Verify
@@ -230,12 +230,12 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
         verify(punishmentMapper).selectOne(any(LambdaQueryWrapper.class));
-        verify(punishmentMapper).insert(argThat(punishment ->
+        verify(punishmentMapper).insert(argThat((Punishment punishment) ->
             punishment.getUserId().equals(userId) &&
             punishment.getType().equals("ban") &&
             punishment.getDuration().equals(duration) &&
@@ -258,11 +258,11 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
-        verify(punishmentMapper).insert(argThat(punishment ->
+        verify(punishmentMapper).insert(argThat((Punishment punishment) ->
             punishment.getUserId().equals(userId) &&
             punishment.getType().equals("ban") &&
             punishment.getDuration() == null &&  // 永久封禁无时长
@@ -287,12 +287,12 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("用户已被封禁");
 
         // Verify
         verify(punishmentMapper).selectOne(any(LambdaQueryWrapper.class));
-        verify(punishmentMapper, never()).insert(any());
+        verify(punishmentMapper, never()).insert(any(Punishment.class));
     }
 
     @Test
@@ -310,11 +310,11 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
-        verify(punishmentMapper).insert(argThat(punishment ->
+        verify(punishmentMapper).insert(argThat((Punishment punishment) ->
             punishment.getUserId().equals(userId) &&
             punishment.getType().equals("mute") &&
             punishment.getDuration().equals(duration)
@@ -338,11 +338,11 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("用户已被禁言");
 
         // Verify
-        verify(punishmentMapper, never()).insert(any());
+        verify(punishmentMapper, never()).insert(any(Punishment.class));
     }
 
     @Test
@@ -363,12 +363,12 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
         verify(punishmentMapper).selectOne(any(LambdaQueryWrapper.class));
-        verify(punishmentMapper).updateById(argThat(p -> p.getStatus().equals(1)));
+        verify(punishmentMapper).updateById(argThat((Punishment p) -> p.getStatus().equals(1)));
     }
 
     @Test
@@ -382,12 +382,12 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("用户未被封禁");
 
         // Verify
         verify(punishmentMapper).selectOne(any(LambdaQueryWrapper.class));
-        verify(punishmentMapper, never()).updateById(any());
+        verify(punishmentMapper, never()).updateById(any(Punishment.class));
     }
 
     @Test
@@ -408,11 +408,11 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
-        verify(punishmentMapper).updateById(argThat(p -> p.getStatus().equals(1)));
+        verify(punishmentMapper).updateById(argThat((Punishment p) -> p.getStatus().equals(1)));
     }
 
     @Test
@@ -426,11 +426,11 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("用户未被禁言");
 
         // Verify
-        verify(punishmentMapper, never()).updateById(any());
+        verify(punishmentMapper, never()).updateById(any(Punishment.class));
     }
 
     @Test
@@ -444,7 +444,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEqualTo(8);
 
         // Verify
@@ -464,7 +464,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -484,7 +484,7 @@ public class RemoteReportServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
 
         // Verify

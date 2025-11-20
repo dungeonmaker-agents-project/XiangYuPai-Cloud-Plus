@@ -15,7 +15,10 @@ security:
       - /*/error
       - /csrf
       - /warm-flow-ui/**
-      # XYPai 模块白名单
+      # XYPai Auth 模块白名单
+      - /xypai-auth/auth/login/sms
+      - /xypai-auth/auth/login/password
+      - /xypai-auth/auth/sms/send
       - /xypai-auth/api/v1/auth/login
       - /xypai-auth/api/v1/auth/login/sms
       - /xypai-auth/api/v1/auth/register

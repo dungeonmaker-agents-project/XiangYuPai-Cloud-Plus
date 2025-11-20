@@ -165,9 +165,17 @@ public class RemoteLocationServiceImpl implements RemoteLocationService {
         log.info("RPC调用 - 根据城市名查询代码: {}", cityName);
 
         try {
-            // TODO: 实现根据名称查询城市代码的逻辑
-            // 需要在ICityService中添加相应方法
-            return R.fail("功能未实现");
+            if (cityName == null || cityName.trim().isEmpty()) {
+                return R.fail("城市名称不能为空");
+            }
+
+            String cityCode = cityService.getCityCodeByName(cityName);
+
+            if (cityCode == null) {
+                return R.fail("未找到城市: " + cityName);
+            }
+
+            return R.ok(cityCode);
         } catch (Exception e) {
             log.error("查询城市代码失败: cityName={}", cityName, e);
             return R.fail("查询失败: " + e.getMessage());

@@ -24,31 +24,17 @@
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
+
+        <!-- 日志 -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-mybatis</artifactId>
+            <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
-        <!-- 安全认证 -->
+        <!-- 通用服务实现 -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
-        </dependency>
-
-        <!-- 缓存 -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-redis</artifactId>
-        </dependency>
-
-        <!-- RPC -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-dubbo</artifactId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
         </dependency>
 
         <!-- API文档 -->
@@ -57,10 +43,68 @@
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
-        <!-- 日志 -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-log</artifactId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <!-- RPC -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-dubbo</artifactId>
+        </dependency>
+
+        <!-- 分布式事务 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-seata</artifactId>
+        </dependency>
+
+        <!-- 幂等性支持 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
+        <!-- 多租户支持 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <!-- 安全认证 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <!-- 数据翻译 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <!-- 敏感数据处理 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-sensitive</artifactId>
+        </dependency>
+
+        <!-- 数据加密 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-encrypt</artifactId>
+        </dependency>
+
+        <!-- 缓存 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
         <!-- 对象存储 -->
@@ -83,6 +127,16 @@
         </dependency>
 
         <!-- API接口 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-system</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-resource</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>xypai-api-common</artifactId>

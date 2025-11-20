@@ -17,52 +17,82 @@
 
     <dependencies>
 
-        <!-- Nacos Service Discovery & Config -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
 
-        <!-- Common Web -->
+        <!-- RuoYi Common Log -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-web</artifactId>
+            <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
-        <!-- Common Security (includes Sa-Token) -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
         </dependency>
 
-        <!-- MyBatis Plus -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-mybatis</artifactId>
-        </dependency>
-
-        <!-- Redis Cache -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-redis</artifactId>
-        </dependency>
-
-        <!-- Dubbo RPC -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-dubbo</artifactId>
-        </dependency>
-
-        <!-- API Documentation -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
-        <!-- Logging -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-log</artifactId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-dubbo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-seata</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-sensitive</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-encrypt</artifactId>
+        </dependency>
+
+        <!-- User Module Specific Dependencies -->
+        <!-- Redis Cache -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
         <!-- Rate Limiter -->
@@ -75,12 +105,6 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-json</artifactId>
-        </dependency>
-
-        <!-- Translation -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-translation</artifactId>
         </dependency>
 
         <!-- OSS (for avatar and image uploads) -->

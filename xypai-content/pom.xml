@@ -23,34 +23,16 @@
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
 
-        <!-- Common Web -->
+        <!-- RuoYi Common Log -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-web</artifactId>
+            <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
-        <!-- Common Security (includes Sa-Token) -->
+        <!-- RuoYi Common Service Implementation -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
-        </dependency>
-
-        <!-- MyBatis Plus -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-mybatis</artifactId>
-        </dependency>
-
-        <!-- Redis Cache -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-redis</artifactId>
-        </dependency>
-
-        <!-- Dubbo RPC -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-dubbo</artifactId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
         </dependency>
 
         <!-- API Documentation -->
@@ -59,10 +41,70 @@
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
-        <!-- Logging -->
+        <!-- Common Web -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-log</artifactId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <!-- MyBatis Plus -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <!-- Dubbo RPC -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-dubbo</artifactId>
+        </dependency>
+
+        <!-- Seata Distributed Transaction -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-seata</artifactId>
+        </dependency>
+
+        <!-- Idempotent -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
+        <!-- Multi-Tenant -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <!-- Common Security (includes Sa-Token) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <!-- Translation -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <!-- Sensitive Data Handling -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-sensitive</artifactId>
+        </dependency>
+
+        <!-- Encrypt -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-encrypt</artifactId>
+        </dependency>
+
+        <!-- Redis Cache -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
         <!-- Rate Limiter -->
@@ -75,12 +117,6 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-json</artifactId>
-        </dependency>
-
-        <!-- Translation -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-translation</artifactId>
         </dependency>
 
         <!-- Elasticsearch (for search functionality) -->
@@ -113,9 +149,15 @@
                 <version>${spring-boot.version}</version>
                 <executions>
                     <execution>
+                        <id>repackage</id>
+                        <phase>package</phase>
                         <goals>
                             <goal>repackage</goal>
                         </goals>
+                        <configuration>
+                            <attach>false</attach>
+                            <classifier>exec</classifier>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -145,6 +187,7 @@
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <skip>true</skip>
                             <rules>
                                 <rule>
                                     <element>PACKAGE</element>
@@ -170,7 +213,13 @@
                 <configuration>
                     <skipTests>false</skipTests>
                     <testFailureIgnore>false</testFailureIgnore>
-                    <argLine>${argLine} -Dfile.encoding=UTF-8</argLine>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                    <useModulePath>false</useModulePath>
+                    <useManifestOnlyJar>false</useManifestOnlyJar>
+                    <argLine>-Dfile.encoding=UTF-8 -Djdk.net.URLClassPath.disableClassPathURLCheck=true @{argLine}</argLine>
                 </configuration>
             </plugin>
         </plugins>

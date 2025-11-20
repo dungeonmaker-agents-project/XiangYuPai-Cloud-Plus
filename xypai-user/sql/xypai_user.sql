@@ -1,15 +1,33 @@
 -- ========================================
--- XiangYuPai User Service Database Schema
+-- XiangYuPai User Service - Complete Database Script
 -- ========================================
 -- Database: xypai_user
--- Version: 1.0.0
+-- Version: 1.0.1
 -- Created: 2025-11-14
--- Description: User business data (profiles, relations, skills)
+-- Updated: 2025-11-18
+-- Description: Complete database setup with fresh schema
+--
+-- This script will:
+-- 1. DROP existing xypai_user database (⚠️ WARNING: All data will be lost!)
+-- 2. CREATE new xypai_user database
+-- 3. CREATE all tables with correct schema
+-- 4. INSERT sample test data
+--
+-- Usage:
+--   mysql -u root -p < xypai_user.sql
 -- ========================================
 
-CREATE DATABASE IF NOT EXISTS `xypai_user` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- ========================================
+-- Step 1: Drop and Recreate Database
+-- ========================================
+DROP DATABASE IF EXISTS `xypai_user`;
+CREATE DATABASE `xypai_user` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE `xypai_user`;
+
+-- ========================================
+-- Step 2: Create All Tables
+-- ========================================
 
 -- ========================================
 -- 1. users - 用户基本信息表
@@ -17,6 +35,10 @@ USE `xypai_user`;
 CREATE TABLE `users` (
     -- Primary Key
     `user_id`           BIGINT(20)      NOT NULL AUTO_INCREMENT COMMENT '用户ID（主键）',
+
+    -- Authentication Info
+    `mobile`            VARCHAR(20)     NOT NULL COMMENT '手机号',
+    `country_code`      VARCHAR(10)     NOT NULL DEFAULT '+86' COMMENT '国家区号',
 
     -- Basic Info (from frontend docs)
     `nickname`          VARCHAR(50)     NOT NULL COMMENT '昵称（2-20字符）',
@@ -35,8 +57,13 @@ CREATE TABLE `users` (
     `latitude`          DECIMAL(10,7)   DEFAULT NULL COMMENT '纬度',
     `longitude`         DECIMAL(10,7)   DEFAULT NULL COMMENT '经度',
 
+    -- Privacy Settings
+    `privacy_profile`   TINYINT(1)      DEFAULT 1 COMMENT '资料可见性（1-公开，2-仅粉丝，3-私密）',
+
     -- Status
     `is_online`         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否在线（0-否，1-是）',
+    `last_login_at`     DATETIME        DEFAULT NULL COMMENT '最后登录时间',
+    `last_login_ip`     VARCHAR(50)     DEFAULT NULL COMMENT '最后登录IP',
 
     -- Audit Fields (MANDATORY)
     `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -45,9 +72,10 @@ CREATE TABLE `users` (
     `version`           INT(11)         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
 
     PRIMARY KEY (`user_id`),
+    UNIQUE KEY `uk_mobile_country` (`mobile`, `country_code`, `deleted`),
     KEY `idx_nickname` (`nickname`),
     KEY `idx_wechat` (`wechat`),
-    SPATIAL KEY `idx_location` (`location`),
+    KEY `idx_latitude_longitude` (`latitude`, `longitude`),
     KEY `idx_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户基本信息表';
 
@@ -66,6 +94,10 @@ CREATE TABLE `user_stats` (
     `likes_count`       INT(11)         NOT NULL DEFAULT 0 COMMENT '获赞总数',
     `posts_count`       INT(11)         NOT NULL DEFAULT 0 COMMENT '动态数',
     `favorites_count`   INT(11)         NOT NULL DEFAULT 0 COMMENT '收藏数',
+    `moments_count`     INT(11)         NOT NULL DEFAULT 0 COMMENT '动态数(moments)',
+    `collections_count` INT(11)         NOT NULL DEFAULT 0 COMMENT '收藏数(collections)',
+    `skills_count`      INT(11)         NOT NULL DEFAULT 0 COMMENT '技能数',
+    `orders_count`      INT(11)         NOT NULL DEFAULT 0 COMMENT '订单数',
 
     -- Audit Fields
     `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -206,12 +238,12 @@ CREATE TABLE `skills` (
     `game_rank`         VARCHAR(50)     DEFAULT NULL COMMENT '游戏段位（线上技能专用）',
     `service_hours`     DECIMAL(4,2)    DEFAULT NULL COMMENT '服务时长（小时/局，线上技能专用）',
 
-    -- Offline Skill Specific Fields
+    -- Offline Skill Specific Fields (location required for offline skills, enforced in application)
     `service_type`      VARCHAR(100)    DEFAULT NULL COMMENT '服务类型（线下技能专用）',
     `service_location`  VARCHAR(500)    DEFAULT NULL COMMENT '服务地点（线下技能专用）',
-    `location`          POINT SRID 4326 DEFAULT NULL COMMENT '地理位置（线下技能专用）',
-    `latitude`          DECIMAL(10,7)   DEFAULT NULL COMMENT '纬度',
-    `longitude`         DECIMAL(10,7)   DEFAULT NULL COMMENT '经度',
+    `location`          POINT SRID 4326 DEFAULT NULL COMMENT '地理位置（线下技能时必填，应用层校验）',
+    `latitude`          DECIMAL(10,7)   DEFAULT NULL COMMENT '纬度（线下技能时必填）',
+    `longitude`         DECIMAL(10,7)   DEFAULT NULL COMMENT '经度（线下技能时必填）',
 
     -- Audit Fields
     `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -225,7 +257,7 @@ CREATE TABLE `skills` (
     KEY `idx_is_online` (`is_online`),
     KEY `idx_game_name` (`game_name`),
     KEY `idx_service_type` (`service_type`),
-    SPATIAL KEY `idx_location` (`location`),
+    KEY `idx_latitude_longitude` (`latitude`, `longitude`),
     KEY `idx_created_at` (`created_at`),
     KEY `idx_deleted` (`deleted`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='技能表（线上+线下）';
@@ -332,16 +364,26 @@ CREATE TABLE `skill_available_times` (
 
 
 -- ========================================
--- Initial Data (Optional)
+-- Step 3: Insert Initial Test Data
 -- ========================================
 
 -- Insert test user
-INSERT INTO `users` (`user_id`, `nickname`, `avatar`, `gender`, `bio`) VALUES
-(1, '测试用户', 'https://cdn.example.com/avatar/default.png', 'male', '这是一个测试用户');
+INSERT INTO `users` (`user_id`, `mobile`, `country_code`, `nickname`, `avatar`, `gender`, `bio`) VALUES
+(1, '13800138000', '+86', '测试用户', 'https://cdn.example.com/avatar/default.png', 'male', '这是一个测试用户');
 
 -- Insert user stats for test user
 INSERT INTO `user_stats` (`user_id`, `following_count`, `fans_count`, `likes_count`) VALUES
 (1, 0, 0, 0);
+
+-- ========================================
+-- Step 4: Verification
+-- ========================================
+SELECT '✅ Database created successfully!' AS status;
+SELECT 'Database: xypai_user' AS info;
+SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'xypai_user';
+
+-- Show all tables
+SHOW TABLES;
 
 -- ========================================
 -- End of Schema

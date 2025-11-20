@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -344,9 +345,7 @@ public class MessageServiceImpl implements IMessageService {
         }
 
         // 3. Check time limit (2 minutes)
-        LocalDateTime createTime = message.getCreateTime();
-        long timeDiff = System.currentTimeMillis() -
-            createTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+        long timeDiff = System.currentTimeMillis() - message.getCreateTime().getTime();
 
         if (timeDiff > RECALL_TIMEOUT_MILLIS) {
             throw new ServiceException("超过2分钟，无法撤回");
@@ -416,7 +415,8 @@ public class MessageServiceImpl implements IMessageService {
             .duration(message.getDuration())
             .status(message.getStatus())
             .isRecalled(message.getIsRecalled())
-            .createdAt(message.getCreateTime())
+            .createdAt(message.getCreateTime() != null ?
+                LocalDateTime.ofInstant(message.getCreateTime().toInstant(), ZoneId.systemDefault()) : null)
             .build();
     }
 

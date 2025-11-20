@@ -40,7 +40,11 @@ public class LogEventListener {
     @EventListener
     public void saveLog(OperLogEvent operLogEvent) {
         RemoteOperLogBo sysOperLog = BeanUtil.toBean(operLogEvent, RemoteOperLogBo.class);
-        remoteLogService.saveLog(sysOperLog);
+        try {
+            remoteLogService.saveLog(sysOperLog);
+        } catch (Exception e) {
+            log.warn("无法保存操作日志到系统服务（服务可能未启动）: {}", e.getMessage());
+        }
     }
 
     /**
@@ -90,7 +94,13 @@ public class LogEventListener {
         } else if (Constants.LOGIN_FAIL.equals(logininforEvent.getStatus())) {
             logininfor.setStatus(Constants.FAIL);
         }
-        remoteLogService.saveLogininfor(logininfor);
+
+        // 尝试保存登录日志到系统服务（如果服务不可用则跳过）
+        try {
+            remoteLogService.saveLogininfor(logininfor);
+        } catch (Exception e) {
+            log.warn("无法保存登录日志到系统服务（服务可能未启动）: {}", e.getMessage());
+        }
     }
 
     private String getBlock(Object msg) {

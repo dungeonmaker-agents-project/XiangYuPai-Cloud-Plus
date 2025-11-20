@@ -145,8 +145,8 @@ class PunishmentApiTest extends ApiTestBase {
         assertThat(response.jsonPath().getInt("code")).isEqualTo(200);
 
         // 验证返回数据结构
-        assertThat(response.jsonPath().get("data.isBanned")).isNotNull();
-        assertThat(response.jsonPath().get("data.isMuted")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.isBanned")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.isMuted")).isNotNull();
     }
 
     /**

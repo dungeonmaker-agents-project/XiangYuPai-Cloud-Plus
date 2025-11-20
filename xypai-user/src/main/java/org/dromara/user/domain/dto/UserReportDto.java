@@ -20,6 +20,12 @@ public class UserReportDto {
     @Schema(description = "Reported user ID")
     private Long reportedUserId;
 
+    @Schema(description = "Report type")
+    private Integer reportType;
+
+    @Schema(description = "Report reason")
+    private String reportReason;
+
     @NotBlank(message = "举报原因不能为空")
     @Schema(description = "Reason: spam, abuse, inappropriate, fraud, other")
     private String reason;
@@ -30,4 +36,7 @@ public class UserReportDto {
 
     @Schema(description = "Evidence (image URLs, comma separated)")
     private String evidence;
+
+    @Schema(description = "Report images (URLs list)")
+    private java.util.List<String> reportImages;
 }

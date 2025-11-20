@@ -27,4 +27,12 @@ public interface ICityService {
      * @return 城市信息
      */
     CityInfoVo getByCityCode(String cityCode);
+
+    /**
+     * 根据城市名称查询城市代码
+     *
+     * @param cityName 城市名称
+     * @return 城市代码 (如果找不到返回null)
+     */
+    String getCityCodeByName(String cityName);
 }

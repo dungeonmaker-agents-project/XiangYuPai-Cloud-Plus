@@ -69,4 +69,37 @@ public interface SkillMapper extends BaseMapper<Skill> {
      */
     @Select("SELECT * FROM skills WHERE user_id = #{userId} AND is_online = 1 AND deleted = 0 ORDER BY created_at DESC")
     List<Skill> selectOnlineSkillsByUserId(@Param("userId") Long userId);
+
+    /**
+     * 查询用户的技能列表 (分页)
+     *
+     * @param userId 用户ID
+     * @param cursor 游标
+     * @return 技能列表
+     */
+    default List<Skill> selectMySkills(Long userId, Object cursor) {
+        return selectByUserId(userId);
+    }
+
+    /**
+     * 查询附近的技能 (别名方法)
+     *
+     * @param latitude     纬度
+     * @param longitude    经度
+     * @param radiusMeters 半径（米）
+     * @param cursor       游标
+     * @return 附近技能列表
+     */
+    default List<Skill> selectNearbySkills(BigDecimal latitude, BigDecimal longitude, Integer radiusMeters, Object cursor) {
+        return findNearbySkills(latitude, longitude, radiusMeters, 50);
+    }
+
+    /**
+     * 统计用户的技能数量
+     *
+     * @param userId 用户ID
+     * @return 技能数量
+     */
+    @Select("SELECT COUNT(*) FROM skills WHERE user_id = #{userId} AND deleted = 0")
+    long countByUserId(@Param("userId") Long userId);
 }

@@ -18,12 +18,21 @@ import java.util.List;
 @Schema(description = "Create online skill request")
 public class OnlineSkillCreateDto {
 
+    @Schema(description = "Skill type")
+    private Integer skillType;
+
+    @Schema(description = "Game ID")
+    private String gameId;
+
     @Schema(description = "Cover image URL")
     private String coverImage;
 
     @NotBlank(message = "游戏名称不能为空")
     @Schema(description = "Game name")
     private String gameName;
+
+    @Schema(description = "Rank")
+    private String rank;
 
     @NotBlank(message = "游戏段位不能为空")
     @Schema(description = "Game rank")
@@ -43,6 +52,9 @@ public class OnlineSkillCreateDto {
     @DecimalMin(value = "0.01", message = "价格必须大于0")
     @Schema(description = "Price")
     private BigDecimal price;
+
+    @Schema(description = "Price per hour")
+    private BigDecimal pricePerHour;
 
     @NotNull(message = "服务时长不能为空")
     @Schema(description = "Service hours per match/session")

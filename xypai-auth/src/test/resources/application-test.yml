@@ -63,6 +63,10 @@ spring:
       config:
         enabled: false
 
+  # 禁用 Spring Cloud 配置导入
+  config:
+    import: none
+
 # Dubbo 配置（禁用）
 dubbo:
   application:
@@ -79,6 +83,11 @@ dubbo:
   consumer:
     check: false
     timeout: 30000
+  # 禁用元数据中心（避免测试时启动失败）
+  metadata-report:
+    address: ""
+  config-center:
+    address: ""
 
 # Sa-Token 配置（测试环境）
 sa-token:

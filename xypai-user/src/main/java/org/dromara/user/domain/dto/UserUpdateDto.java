@@ -52,6 +52,10 @@ public class UserUpdateDto {
     @Pattern(regexp = "^[a-zA-Z0-9_-]{6,20}$", message = "微信号格式不正确")
     private String wechat;
 
+    @Schema(description = "WeChat ID (alias for wechat)")
+    @Pattern(regexp = "^[a-zA-Z0-9_-]{6,20}$", message = "微信号格式不正确")
+    private String wechatId;
+
     @Schema(description = "Bio (0-200 characters)")
     @Size(max = 200, message = "个性签名不能超过200字符")
     private String bio;

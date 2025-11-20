@@ -17,9 +17,10 @@ public interface IFeedService {
      * 获取动态列表
      *
      * @param queryDTO 查询参数
+     * @param currentUserId 当前用户ID(可为null)
      * @return 动态列表
      */
-    Page<FeedListVO> getFeedList(FeedListQueryDTO queryDTO);
+    Page<FeedListVO> getFeedList(FeedListQueryDTO queryDTO, Long currentUserId);
 
     /**
      * 获取动态详情

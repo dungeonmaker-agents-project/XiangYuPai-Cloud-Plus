@@ -44,7 +44,7 @@ public class FeedServiceImpl implements IFeedService {
     private static final String CACHE_KEY_FEED_LIST = "feed:list:";
 
     @Override
-    public Page<FeedListVO> getFeedList(FeedListQueryDTO queryDTO) {
+    public Page<FeedListVO> getFeedList(FeedListQueryDTO queryDTO, Long currentUserId) {
         // 1. 构建查询条件
         Page<Feed> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
 
@@ -94,7 +94,7 @@ public class FeedServiceImpl implements IFeedService {
 
             // 转换为VO
             List<FeedListVO> voList = pagedFeeds.stream()
-                .map(this::convertToListVO)
+                .map(feed -> convertToListVO(feed, currentUserId))
                 .collect(Collectors.toList());
 
             Page<FeedListVO> resultPage = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
@@ -119,7 +119,7 @@ public class FeedServiceImpl implements IFeedService {
 
             // 转换为VO
             List<FeedListVO> voList = nearbyFeeds.stream()
-                .map(this::convertToListVO)
+                .map(feed -> convertToListVO(feed, currentUserId))
                 .collect(Collectors.toList());
 
             Page<FeedListVO> resultPage = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
@@ -133,7 +133,7 @@ public class FeedServiceImpl implements IFeedService {
 
         // 4. 转换为VO
         List<FeedListVO> voList = feedPage.getRecords().stream()
-            .map(this::convertToListVO)
+            .map(feed -> convertToListVO(feed, currentUserId))
             .collect(Collectors.toList());
 
         // 5. 构建返回结果
@@ -278,6 +278,13 @@ public class FeedServiceImpl implements IFeedService {
      * 转换为列表VO
      */
     private FeedListVO convertToListVO(Feed feed) {
+        return convertToListVO(feed, null);
+    }
+
+    /**
+     * 转换为列表VO(带用户ID检查点赞收藏状态)
+     */
+    private FeedListVO convertToListVO(Feed feed, Long currentUserId) {
         // 生成类型描述
         String typeDesc = getTypeDesc(feed.getType());
 
@@ -285,6 +292,23 @@ public class FeedServiceImpl implements IFeedService {
         String summary = feed.getContent() != null && feed.getContent().length() > 100
             ? feed.getContent().substring(0, 100) + "..."
             : feed.getContent();
+
+        // 查询媒体列表
+        List<FeedListVO.MediaVO> mediaList = getMediaList(feed.getId());
+
+        // 查询话题列表
+        List<FeedListVO.TopicVO> topicList = getTopicList(feed.getId());
+
+        // 查询用户信息 (TODO: 调用UserService RPC)
+        FeedListVO.UserInfoVO userInfo = getUserInfo(feed.getUserId(), currentUserId);
+
+        // 检查当前用户是否点赞/收藏
+        boolean isLiked = false;
+        boolean isCollected = false;
+        if (currentUserId != null) {
+            isLiked = checkIsLiked(currentUserId, "feed", feed.getId());
+            isCollected = checkIsCollected(currentUserId, feed.getId());
+        }
 
         FeedListVO vo = FeedListVO.builder()
             .id(feed.getId())
@@ -294,6 +318,9 @@ public class FeedServiceImpl implements IFeedService {
             .title(feed.getTitle())
             .content(feed.getContent())
             .summary(summary)
+            .userInfo(userInfo)
+            .mediaList(mediaList)
+            .topicList(topicList)
             .locationName(feed.getLocationName())
             .cityId(feed.getCityId())
             .likeCount(feed.getLikeCount())
@@ -301,12 +328,10 @@ public class FeedServiceImpl implements IFeedService {
             .shareCount(feed.getShareCount())
             .collectCount(feed.getCollectCount())
             .viewCount(feed.getViewCount())
-            .isLiked(false)
-            .isCollected(false)
+            .isLiked(isLiked)
+            .isCollected(isCollected)
             .createdAt(feed.getCreatedAt())
             .build();
-
-        // TODO: 填充userInfo, mediaList, topicList
 
         return vo;
     }
@@ -323,6 +348,23 @@ public class FeedServiceImpl implements IFeedService {
             ? feed.getContent().substring(0, 100) + "..."
             : feed.getContent();
 
+        // 查询媒体列表
+        List<FeedDetailVO.MediaVO> mediaList = getMediaListForDetail(feed.getId());
+
+        // 查询话题列表
+        List<FeedDetailVO.TopicVO> topicList = getTopicListForDetail(feed.getId());
+
+        // 查询用户信息
+        FeedDetailVO.UserInfoVO userInfo = getUserInfoForDetail(feed.getUserId(), userId);
+
+        // 检查当前用户是否点赞/收藏
+        boolean isLiked = false;
+        boolean isCollected = false;
+        if (userId != null) {
+            isLiked = checkIsLiked(userId, "feed", feed.getId());
+            isCollected = checkIsCollected(userId, feed.getId());
+        }
+
         FeedDetailVO vo = FeedDetailVO.builder()
             .id(feed.getId())
             .userId(feed.getUserId())
@@ -331,6 +373,9 @@ public class FeedServiceImpl implements IFeedService {
             .title(feed.getTitle())
             .content(feed.getContent())
             .summary(summary)
+            .userInfo(userInfo)
+            .mediaList(mediaList)
+            .topicList(topicList)
             .locationName(feed.getLocationName())
             .locationAddress(feed.getLocationAddress())
             .cityId(feed.getCityId())
@@ -339,14 +384,12 @@ public class FeedServiceImpl implements IFeedService {
             .shareCount(feed.getShareCount())
             .collectCount(feed.getCollectCount())
             .viewCount(feed.getViewCount())
-            .isLiked(false)
-            .isCollected(false)
+            .isLiked(isLiked)
+            .isCollected(isCollected)
             .canEdit(feed.getUserId().equals(userId))
             .canDelete(feed.getUserId().equals(userId))
             .createdAt(feed.getCreatedAt())
             .build();
-
-        // TODO: 填充userInfo, mediaList, topicList
 
         return vo;
     }
@@ -414,6 +457,154 @@ public class FeedServiceImpl implements IFeedService {
         double hotScore = baseScore * timeFactor;
 
         return hotScore;
+    }
+
+    /**
+     * 获取媒体列表 (用于FeedListVO)
+     */
+    private List<FeedListVO.MediaVO> getMediaList(Long feedId) {
+        LambdaQueryWrapper<FeedMedia> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FeedMedia::getFeedId, feedId);
+        wrapper.orderByAsc(FeedMedia::getSortOrder);
+        List<FeedMedia> feedMediaList = feedMediaMapper.selectList(wrapper);
+
+        return feedMediaList.stream()
+            .map(fm -> FeedListVO.MediaVO.builder()
+                .mediaId(fm.getMediaId())
+                .mediaType(fm.getMediaType())
+                .url("https://via.placeholder.com/400x300") // TODO: 从MediaService获取实际URL
+                .thumbnailUrl("https://via.placeholder.com/150x100") // TODO: 从MediaService获取缩略图
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取媒体列表 (用于FeedDetailVO)
+     */
+    private List<FeedDetailVO.MediaVO> getMediaListForDetail(Long feedId) {
+        LambdaQueryWrapper<FeedMedia> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FeedMedia::getFeedId, feedId);
+        wrapper.orderByAsc(FeedMedia::getSortOrder);
+        List<FeedMedia> feedMediaList = feedMediaMapper.selectList(wrapper);
+
+        return feedMediaList.stream()
+            .map(fm -> FeedDetailVO.MediaVO.builder()
+                .mediaId(fm.getMediaId())
+                .mediaType(fm.getMediaType())
+                .url("https://via.placeholder.com/800x600") // TODO: 从MediaService获取实际URL
+                .thumbnailUrl("https://via.placeholder.com/200x150") // TODO: 从MediaService获取缩略图
+                .width(800)
+                .height(600)
+                .duration(fm.getMediaType().equals("video") ? 60 : null)
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取话题列表 (用于FeedListVO)
+     */
+    private List<FeedListVO.TopicVO> getTopicList(Long feedId) {
+        LambdaQueryWrapper<FeedTopic> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FeedTopic::getFeedId, feedId);
+        List<FeedTopic> feedTopicList = feedTopicMapper.selectList(wrapper);
+
+        return feedTopicList.stream()
+            .map(ft -> {
+                // 查询话题信息
+                LambdaQueryWrapper<Topic> topicWrapper = new LambdaQueryWrapper<>();
+                topicWrapper.eq(Topic::getName, ft.getTopicName());
+                Topic topic = topicMapper.selectOne(topicWrapper);
+
+                return FeedListVO.TopicVO.builder()
+                    .name(ft.getTopicName())
+                    .isHot(topic != null && topic.getIsHot() == 1)
+                    .build();
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取话题列表 (用于FeedDetailVO)
+     */
+    private List<FeedDetailVO.TopicVO> getTopicListForDetail(Long feedId) {
+        LambdaQueryWrapper<FeedTopic> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FeedTopic::getFeedId, feedId);
+        List<FeedTopic> feedTopicList = feedTopicMapper.selectList(wrapper);
+
+        return feedTopicList.stream()
+            .map(ft -> {
+                // 查询话题信息
+                LambdaQueryWrapper<Topic> topicWrapper = new LambdaQueryWrapper<>();
+                topicWrapper.eq(Topic::getName, ft.getTopicName());
+                Topic topic = topicMapper.selectOne(topicWrapper);
+
+                return FeedDetailVO.TopicVO.builder()
+                    .name(ft.getTopicName())
+                    .description(topic != null ? topic.getDescription() : null)
+                    .participantCount(topic != null ? topic.getParticipantCount() : 0)
+                    .postCount(topic != null ? topic.getPostCount() : 0)
+                    .build();
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取用户信息 (用于FeedListVO)
+     * TODO: 调用UserService RPC获取真实用户信息
+     */
+    private FeedListVO.UserInfoVO getUserInfo(Long userId, Long currentUserId) {
+        return FeedListVO.UserInfoVO.builder()
+            .id(userId)
+            .nickname("用户" + userId)
+            .avatar("https://via.placeholder.com/100")
+            .gender("male")
+            .age(25)
+            .isFollowed(false) // TODO: 调用UserService RPC检查关注状态
+            .isRealVerified(false)
+            .isGodVerified(false)
+            .isVip(false)
+            .isPopular(false)
+            .build();
+    }
+
+    /**
+     * 获取用户信息 (用于FeedDetailVO)
+     * TODO: 调用UserService RPC获取真实用户信息
+     */
+    private FeedDetailVO.UserInfoVO getUserInfoForDetail(Long userId, Long currentUserId) {
+        return FeedDetailVO.UserInfoVO.builder()
+            .id(userId)
+            .nickname("用户" + userId)
+            .avatar("https://via.placeholder.com/100")
+            .gender("male")
+            .age(25)
+            .isFollowed(false) // TODO: 调用UserService RPC检查关注状态
+            .isRealVerified(false)
+            .isGodVerified(false)
+            .isVip(false)
+            .build();
+    }
+
+    /**
+     * 检查用户是否点赞
+     */
+    private boolean checkIsLiked(Long userId, String targetType, Long targetId) {
+        LambdaQueryWrapper<Like> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Like::getUserId, userId)
+               .eq(Like::getTargetType, targetType)
+               .eq(Like::getTargetId, targetId);
+        return likeMapper.selectCount(wrapper) > 0;
+    }
+
+    /**
+     * 检查用户是否收藏
+     */
+    private boolean checkIsCollected(Long userId, Long feedId) {
+        LambdaQueryWrapper<ContentCollection> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ContentCollection::getUserId, userId)
+               .eq(ContentCollection::getTargetType, "feed")
+               .eq(ContentCollection::getTargetId, feedId);
+        return collectionMapper.selectCount(wrapper) > 0;
     }
 
 }

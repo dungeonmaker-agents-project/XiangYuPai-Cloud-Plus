@@ -77,4 +77,48 @@ public interface UserRelationMapper extends BaseMapper<UserRelation> {
         + " AND deleted = 0"
         + "</script>")
     List<UserRelation> selectBatchRelations(@Param("followerId") Long followerId, @Param("followingIds") List<Long> followingIds);
+
+    /**
+     * 查询关注关系 (别名方法)
+     *
+     * @param followerId  关注者ID
+     * @param followingId 被关注者ID
+     * @return 关注关系
+     */
+    default UserRelation selectByFollowerAndFollowing(Long followerId, Long followingId) {
+        return selectRelation(followerId, followingId);
+    }
+
+    /**
+     * 查询粉丝列表 (别名方法)
+     *
+     * @param userId 用户ID
+     * @param cursor 游标
+     * @param limit  限制数量
+     * @return 粉丝ID列表
+     */
+    default List<Long> selectFansList(Long userId, Object cursor, Object limit) {
+        return selectFans(userId);
+    }
+
+    /**
+     * 查询关注列表 (别名方法)
+     *
+     * @param userId 用户ID
+     * @param cursor 游标
+     * @param limit  限制数量
+     * @return 关注的用户ID列表
+     */
+    default List<Long> selectFollowingList(Long userId, Object cursor, Object limit) {
+        return selectFollowing(userId);
+    }
+
+    /**
+     * 统计用户关注数量
+     *
+     * @param userId 用户ID
+     * @return 关注数量
+     */
+    @Select("SELECT COUNT(*) FROM user_relations WHERE follower_id = #{userId} AND deleted = 0")
+    long countFollowingByUserId(@Param("userId") Long userId);
 }

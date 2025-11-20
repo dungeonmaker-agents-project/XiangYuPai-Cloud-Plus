@@ -60,7 +60,7 @@ public class CommentController extends BaseController {
         StpUtil.checkLogin();
         Long userId = StpUtil.getLoginIdAsLong();
         CommentListVO comment = commentService.publishComment(publishDTO, userId);
-        return R.ok(comment, "评论成功");
+        return R.ok("评论成功", comment);
     }
 
     /**
@@ -75,7 +75,7 @@ public class CommentController extends BaseController {
         StpUtil.checkLogin();
         Long userId = StpUtil.getLoginIdAsLong();
         commentService.deleteComment(commentId, userId);
-        return R.ok(null, "删除成功");
+        return R.ok("删除成功");
     }
 
 }

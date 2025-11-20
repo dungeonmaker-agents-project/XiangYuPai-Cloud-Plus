@@ -55,7 +55,7 @@ class NotificationFlowTest extends FlowTestBase {
         // Then: 验证未读数返回成功
         assertThat(unreadCountResponse.statusCode()).isEqualTo(200);
         assertThat(unreadCountResponse.jsonPath().getInt("code")).isEqualTo(200);
-        assertThat(unreadCountResponse.jsonPath().get("data")).isNotNull();
+        assertThat((Object) unreadCountResponse.jsonPath().get("data")).isNotNull();
 
         // 验证未读数数据结构
         Map<String, Object> unreadCount = unreadCountResponse.jsonPath().getMap("data");
@@ -133,8 +133,8 @@ class NotificationFlowTest extends FlowTestBase {
             }
 
             // 验证数据结构
-            assertThat(response.jsonPath().get("data.total")).isNotNull();
-            assertThat(response.jsonPath().get("data.list")).isNotNull();
+            assertThat((Object) response.jsonPath().get("data.total")).isNotNull();
+            assertThat((Object) response.jsonPath().get("data.list")).isNotNull();
         }
     }
 

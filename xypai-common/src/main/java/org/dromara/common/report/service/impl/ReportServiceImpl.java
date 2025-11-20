@@ -96,7 +96,11 @@ public class ReportServiceImpl implements IReportService {
             // 2=删除内容 (需要调用对应模块的删除接口)
             log.info("审核结果: 删除内容 - 内容类型: {}, 内容ID: {}",
                      report.getContentType(), report.getContentId());
-            // TODO: 调用对应模块删除内容
+            // TODO: [FUTURE ENHANCEMENT] 调用对应模块删除内容
+            // 需要通过Dubbo RPC调用对应内容模块（xypai-content, xypai-chat等）的删除接口
+            // 当前仅记录审核结果，实际删除需要由各模块的管理后台手动执行
+            log.warn("内容删除需要手动执行 - 内容类型: {}, 内容ID: {}",
+                     report.getContentType(), report.getContentId());
 
         } else if (reviewBo.getReviewResult() == 3) {
             // 3=封禁用户

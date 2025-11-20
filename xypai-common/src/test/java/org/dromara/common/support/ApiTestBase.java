@@ -59,7 +59,9 @@ public abstract class ApiTestBase {
         RestAssured.port = serverPort;
         RestAssured.basePath = "";
         RestAssured.config = RestAssuredConfig.config()
-            .objectMapperConfig(new ObjectMapperConfig().defaultObjectMapperType(ObjectMapperConfig.ObjectMapperType.JACKSON_2));
+            .objectMapperConfig(new ObjectMapperConfig().jackson2ObjectMapperFactory(
+                (cls, charset) -> new com.fasterxml.jackson.databind.ObjectMapper()
+            ));
 
         // 生成测试用户Token
         userToken = generateTestUserToken(testUserId);

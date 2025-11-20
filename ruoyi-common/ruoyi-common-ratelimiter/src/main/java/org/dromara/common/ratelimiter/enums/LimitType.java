@@ -20,5 +20,10 @@ public enum LimitType {
     /**
      * 实例限流(集群多后端实例)
      */
-    CLUSTER
+    CLUSTER,
+
+    /**
+     * 根据用户ID进行限流
+     */
+    USER
 }

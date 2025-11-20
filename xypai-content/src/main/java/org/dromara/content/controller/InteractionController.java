@@ -68,7 +68,7 @@ public class InteractionController extends BaseController {
         StpUtil.checkLogin();
         Long userId = StpUtil.getLoginIdAsLong();
         InteractionResultVO result = interactionService.handleShare(interactionDTO.getTargetId(), interactionDTO.getShareChannel(), userId);
-        return R.ok(result, "分享成功");
+        return R.ok("分享成功", result);
     }
 
 }

@@ -3,12 +3,12 @@ package org.dromara.chat.service.impl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.chat.service.IFileUploadService;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.oss.core.OssClient;
 import org.dromara.common.oss.entity.UploadResult;
+import org.dromara.common.oss.factory.OssFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,10 +28,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class FileUploadServiceImpl implements IFileUploadService {
-
-    private final OssClient ossClient;
 
     // File size limits (bytes)
     private static final long MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -52,12 +49,13 @@ public class FileUploadServiceImpl implements IFileUploadService {
             // Generate unique filename
             String originalFilename = file.getOriginalFilename();
             String extension = FileUtil.extName(originalFilename);
-            String filename = "chat/images/" + IdUtil.fastSimpleUUID() + "." + extension;
+            String suffix = "chat/images/" + IdUtil.fastSimpleUUID() + "." + extension;
 
             // Upload to OSS
-            UploadResult result = ossClient.upload(file.getBytes(), filename, file.getContentType());
+            OssClient ossClient = OssFactory.instance();
+            UploadResult result = ossClient.uploadSuffix(file.getBytes(), suffix, file.getContentType());
 
-            log.info("Image uploaded successfully: filename={}, url={}", filename, result.getUrl());
+            log.info("Image uploaded successfully: suffix={}, url={}", suffix, result.getUrl());
             return result.getUrl();
 
         } catch (IOException e) {
@@ -75,12 +73,13 @@ public class FileUploadServiceImpl implements IFileUploadService {
             // Generate unique filename
             String originalFilename = file.getOriginalFilename();
             String extension = FileUtil.extName(originalFilename);
-            String filename = "chat/voices/" + IdUtil.fastSimpleUUID() + "." + extension;
+            String suffix = "chat/voices/" + IdUtil.fastSimpleUUID() + "." + extension;
 
             // Upload to OSS
-            UploadResult result = ossClient.upload(file.getBytes(), filename, file.getContentType());
+            OssClient ossClient = OssFactory.instance();
+            UploadResult result = ossClient.uploadSuffix(file.getBytes(), suffix, file.getContentType());
 
-            log.info("Voice uploaded successfully: filename={}, url={}", filename, result.getUrl());
+            log.info("Voice uploaded successfully: suffix={}, url={}", suffix, result.getUrl());
             return result.getUrl();
 
         } catch (IOException e) {
@@ -98,10 +97,11 @@ public class FileUploadServiceImpl implements IFileUploadService {
             // Generate unique filename
             String originalFilename = file.getOriginalFilename();
             String extension = FileUtil.extName(originalFilename);
-            String videoFilename = "chat/videos/" + IdUtil.fastSimpleUUID() + "." + extension;
+            String videoSuffix = "chat/videos/" + IdUtil.fastSimpleUUID() + "." + extension;
 
             // Upload video to OSS
-            UploadResult videoResult = ossClient.upload(file.getBytes(), videoFilename, file.getContentType());
+            OssClient ossClient = OssFactory.instance();
+            UploadResult videoResult = ossClient.uploadSuffix(file.getBytes(), videoSuffix, file.getContentType());
 
             // TODO: Generate video thumbnail
             // For now, return placeholder thumbnail URL

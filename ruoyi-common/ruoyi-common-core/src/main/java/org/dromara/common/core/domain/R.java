@@ -117,4 +117,22 @@ public class R<T> implements Serializable {
         return R.SUCCESS == ret.getCode();
     }
 
+    /**
+     * 判断当前响应是否成功
+     *
+     * @return 是否成功
+     */
+    public Boolean isSuccess() {
+        return R.SUCCESS == this.code;
+    }
+
+    /**
+     * 判断当前响应是否失败
+     *
+     * @return 是否失败
+     */
+    public Boolean isError() {
+        return !this.isSuccess();
+    }
+
 }

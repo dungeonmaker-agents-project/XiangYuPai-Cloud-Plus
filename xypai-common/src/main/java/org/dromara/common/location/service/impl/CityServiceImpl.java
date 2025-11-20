@@ -108,4 +108,22 @@ public class CityServiceImpl implements ICityService {
 
         return cityMapper.selectVoOne(wrapper);
     }
+
+    @Override
+    public String getCityCodeByName(String cityName) {
+        log.debug("根据城市名称查询城市代码 - cityName: {}", cityName);
+
+        if (cityName == null || cityName.trim().isEmpty()) {
+            return null;
+        }
+
+        LambdaQueryWrapper<City> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(City::getCityName, cityName.trim())
+               .eq(City::getStatus, 1)      // 1=正常
+               .eq(City::getDeleted, 0)
+               .last("LIMIT 1");
+
+        City city = cityMapper.selectOne(wrapper);
+        return city != null ? city.getCityCode() : null;
+    }
 }

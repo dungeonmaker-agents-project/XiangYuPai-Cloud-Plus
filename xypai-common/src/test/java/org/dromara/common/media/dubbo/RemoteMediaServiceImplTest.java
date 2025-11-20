@@ -1,7 +1,7 @@
 package org.dromara.common.media.dubbo;
 
 import org.dromara.common.core.domain.R;
-import org.dromara.common.media.domain.MediaFile;
+import org.dromara.common.media.domain.entity.MediaFile;
 import org.dromara.common.media.domain.vo.MediaUploadResultVo;
 import org.dromara.common.media.mapper.MediaFileMapper;
 import org.dromara.common.media.service.IMediaService;
@@ -51,8 +51,9 @@ public class RemoteMediaServiceImplTest {
         mediaFile.setId(fileId);
         mediaFile.setUserId(userId);
         mediaFile.setFileUrl("https://oss.example.com/test.jpg");
-        mediaFile.setFileName("test.jpg");
-        mediaFile.setFileType("image/jpeg");
+        mediaFile.setOriginalName("test.jpg");
+        mediaFile.setStoredName("test.jpg");
+        mediaFile.setMimeType("image/jpeg");
         mediaFile.setFileSize(1024000L);
         mediaFile.setMd5("abc123def456");
     }
@@ -68,7 +69,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEqualTo(mediaFile.getFileUrl());
 
         // Verify
@@ -86,7 +87,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("文件不存在");
 
         // Verify
@@ -108,7 +109,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEqualTo(mediaFile.getFileUrl());
 
         // Verify
@@ -127,7 +128,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("文件不存在");
 
         // Verify
@@ -142,7 +143,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("MD5不能为空");
 
         // Verify
@@ -161,7 +162,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -181,7 +182,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("无权限删除此文件");
 
         // Verify
@@ -200,7 +201,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("文件不存在");
 
         // Verify
@@ -230,7 +231,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -246,7 +247,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -264,7 +265,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -283,7 +284,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
 
         // Verify
@@ -301,7 +302,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -319,7 +320,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
 
         // Verify
@@ -341,12 +342,12 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
         verify(mediaFileMapper).selectById(fileId);
-        verify(mediaFileMapper).updateById(argThat(file ->
+        verify(mediaFileMapper).updateById(argThat((MediaFile file) ->
             file.getBizType().equals(bizType) && file.getBizId().equals(bizId)
         ));
     }
@@ -362,12 +363,12 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("文件不存在");
 
         // Verify
         verify(mediaFileMapper).selectById(fileId);
-        verify(mediaFileMapper, never()).updateById(any());
+        verify(mediaFileMapper, never()).updateById(any(MediaFile.class));
     }
 
     @Test
@@ -390,7 +391,7 @@ public class RemoteMediaServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).hasSize(2);
         assertThat(result.getData()[0]).isEqualTo(file1.getFileUrl());
         assertThat(result.getData()[1]).isEqualTo(file2.getFileUrl());

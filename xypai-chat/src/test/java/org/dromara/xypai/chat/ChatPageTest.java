@@ -1,7 +1,7 @@
 package org.dromara.xypai.chat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.dromara.xypai.chat.domain.Message;
+import org.dromara.chat.domain.entity.Message;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +10,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,7 +57,7 @@ public class ChatPageTest extends BaseTest {
     public void testGetChatHistory_EmptyConversation() throws Exception {
         // Given: Create empty conversation
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 0);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
 
         // When: Get chat history
         mockMvc.perform(get("/api/message/chat/" + conversationId)
@@ -77,7 +79,7 @@ public class ChatPageTest extends BaseTest {
     public void testGetChatHistory_WithMessages() throws Exception {
         // Given: Create conversation with 10 messages
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 10);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
         setUserOnline(TEST_USER_2, true);
 
         // When: Get chat history
@@ -117,7 +119,7 @@ public class ChatPageTest extends BaseTest {
     public void testGetChatHistory_Pagination() throws Exception {
         // Given: Create conversation with 50 messages
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 50);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
 
         // When: Get first page (20 messages)
         mockMvc.perform(get("/api/message/chat/" + conversationId)
@@ -147,7 +149,7 @@ public class ChatPageTest extends BaseTest {
     public void testGetChatHistory_NoPermission() throws Exception {
         // Given: User 1 and User 2 have a conversation
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 5);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
 
         // When: User 3 tries to access the conversation
         mockMvc.perform(get("/api/message/chat/" + conversationId)
@@ -218,7 +220,7 @@ public class ChatPageTest extends BaseTest {
     public void testSendTextMessage_ExistingConversation() throws Exception {
         // Given: Existing conversation
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 3);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
 
         Map<String, Object> request = new HashMap<>();
         request.put("conversationId", conversationId);
@@ -436,7 +438,7 @@ public class ChatPageTest extends BaseTest {
     public void testMarkMessagesAsRead_Success() throws Exception {
         // Given: Conversation with unread messages
         var testData = createConversationWithMessages(TEST_USER_2, TEST_USER_1, 5);
-        Long conversationId = testData.otherUserConversation.getConversationId();
+        Long conversationId = testData.otherUserConversation.getId();
 
         // Set all messages to status 1 (delivered, not read)
         testData.messages.forEach(msg -> {
@@ -460,7 +462,7 @@ public class ChatPageTest extends BaseTest {
     public void testMarkMessagesAsRead_NoUnread() throws Exception {
         // Given: Conversation with all messages already read
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 3);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
 
         // Set all messages to status 2 (already read)
         testData.messages.forEach(msg -> {
@@ -487,11 +489,11 @@ public class ChatPageTest extends BaseTest {
         Message message = testData.messages.get(0);
 
         // When: Recall message
-        mockMvc.perform(post("/api/message/recall/" + message.getMessageId())
+        mockMvc.perform(post("/api/message/recall/" + message.getId())
                 .header("Authorization", TEST_TOKEN_USER_1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.messageId").value(message.getMessageId()))
+                .andExpect(jsonPath("$.data.messageId").value(message.getId()))
                 .andExpect(jsonPath("$.data.isRecalled").value(true))
                 .andExpect(jsonPath("$.data.recalledAt").exists());
 
@@ -506,11 +508,13 @@ public class ChatPageTest extends BaseTest {
         Message message = testData.messages.get(0);
 
         // Set created time to 3 minutes ago
-        message.setCreateTime(LocalDateTime.now().minusMinutes(3));
+        LocalDateTime threeMinutesAgo = LocalDateTime.now().minusMinutes(3);
+        Date oldDate = Date.from(threeMinutesAgo.atZone(ZoneId.systemDefault()).toInstant());
+        message.setCreateTime(oldDate);
         messageMapper.updateById(message);
 
         // When: Try to recall message
-        mockMvc.perform(post("/api/message/recall/" + message.getMessageId())
+        mockMvc.perform(post("/api/message/recall/" + message.getId())
                 .header("Authorization", TEST_TOKEN_USER_1))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(containsString("2分钟")));
@@ -526,7 +530,7 @@ public class ChatPageTest extends BaseTest {
         Message message = testData.messages.get(0);
 
         // When: User 2 tries to recall User 1's message
-        mockMvc.perform(post("/api/message/recall/" + message.getMessageId())
+        mockMvc.perform(post("/api/message/recall/" + message.getId())
                 .header("Authorization", TEST_TOKEN_USER_2))
                 .andExpect(status().isForbidden());
 
@@ -543,7 +547,7 @@ public class ChatPageTest extends BaseTest {
         messageMapper.updateById(message);
 
         // When: Try to recall again
-        mockMvc.perform(post("/api/message/recall/" + message.getMessageId())
+        mockMvc.perform(post("/api/message/recall/" + message.getId())
                 .header("Authorization", TEST_TOKEN_USER_1))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(containsString("已撤回")));
@@ -561,7 +565,7 @@ public class ChatPageTest extends BaseTest {
         Message message = testData.messages.get(0);
 
         // When: Sender deletes message
-        mockMvc.perform(delete("/api/message/" + message.getMessageId())
+        mockMvc.perform(delete("/api/message/" + message.getId())
                 .header("Authorization", TEST_TOKEN_USER_1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
@@ -577,7 +581,7 @@ public class ChatPageTest extends BaseTest {
         Message message = testData.messages.get(0);
 
         // When: Receiver deletes message
-        mockMvc.perform(delete("/api/message/" + message.getMessageId())
+        mockMvc.perform(delete("/api/message/" + message.getId())
                 .header("Authorization", TEST_TOKEN_USER_2))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
@@ -593,7 +597,7 @@ public class ChatPageTest extends BaseTest {
         Message message = testData.messages.get(0);
 
         // When: User 3 tries to delete
-        mockMvc.perform(delete("/api/message/" + message.getMessageId())
+        mockMvc.perform(delete("/api/message/" + message.getId())
                 .header("Authorization", TEST_TOKEN_USER_3))
                 .andExpect(status().isForbidden());
 

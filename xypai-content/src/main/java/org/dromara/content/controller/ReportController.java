@@ -41,7 +41,7 @@ public class ReportController extends BaseController {
         StpUtil.checkLogin();
         Long userId = StpUtil.getLoginIdAsLong();
         ReportVO result = reportService.submitReport(reportDTO, userId);
-        return R.ok(result, "已收到您的举报,我们会尽快处理");
+        return R.ok("已收到您的举报,我们会尽快处理", result);
     }
 
 }

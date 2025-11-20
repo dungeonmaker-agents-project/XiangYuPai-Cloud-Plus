@@ -153,7 +153,7 @@ class OrderServiceBusinessTest extends BaseIntegrationTest {
             .totalAmount(new BigDecimal("52.50"))
             .build();
 
-        var createResult = orderService.createOrder(dto);
+        var createResult = orderService.createOrder(createDto);
         String orderId = createResult.getOrderId();
 
         // First, get the order detail to populate cache
@@ -161,7 +161,7 @@ class OrderServiceBusinessTest extends BaseIntegrationTest {
 
         // Verify cache exists
         String cacheKey = "order:detail:" + orderId;
-        assertThat(RedisUtils.getCacheObject(cacheKey)).isNotNull();
+        assertThat((Object) RedisUtils.getCacheObject(cacheKey)).isNotNull();
 
         // When - Cancel order
         CancelOrderDTO cancelDto = CancelOrderDTO.builder()
@@ -172,6 +172,6 @@ class OrderServiceBusinessTest extends BaseIntegrationTest {
         orderService.cancelOrder(cancelDto);
 
         // Then - Cache should be invalidated
-        assertThat(RedisUtils.getCacheObject(cacheKey)).isNull();
+        assertThat((Object) RedisUtils.getCacheObject(cacheKey)).isNull();
     }
 }

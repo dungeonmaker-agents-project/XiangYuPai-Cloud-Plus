@@ -24,9 +24,9 @@ public class LocationAssertions {
     public static void assertCityListResponse(Response response) {
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.jsonPath().getInt("code")).isEqualTo(200);
-        assertThat(response.jsonPath().get("data")).isNotNull();
-        assertThat(response.jsonPath().get("data.hotCities")).isNotNull();
-        assertThat(response.jsonPath().get("data.allCities")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.hotCities")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.allCities")).isNotNull();
     }
 
     /**
@@ -37,9 +37,9 @@ public class LocationAssertions {
     public static void assertDistrictListResponse(Response response) {
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.jsonPath().getInt("code")).isEqualTo(200);
-        assertThat(response.jsonPath().get("data")).isNotNull();
-        assertThat(response.jsonPath().get("data.cityName")).isNotNull();
-        assertThat(response.jsonPath().get("data.districts")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.cityName")).isNotNull();
+        assertThat((Object) response.jsonPath().get("data.districts")).isNotNull();
     }
 
     /**

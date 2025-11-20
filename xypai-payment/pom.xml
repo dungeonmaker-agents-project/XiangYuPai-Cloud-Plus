@@ -23,16 +23,26 @@
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
 
+        <!-- RuoYi Common Log -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-doc</artifactId>
+        </dependency>
+
         <!-- Common Web -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-web</artifactId>
-        </dependency>
-
-        <!-- Common Security (includes Sa-Token) -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
         </dependency>
 
         <!-- MyBatis Plus -->
@@ -41,10 +51,42 @@
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
 
-        <!-- Redis Cache -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-redis</artifactId>
+            <artifactId>ruoyi-common-seata</artifactId>
+        </dependency>
+
+        <!-- Idempotent (for payment duplicate prevention) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <!-- Common Security (includes Sa-Token) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-sensitive</artifactId>
+        </dependency>
+
+        <!-- Encrypt (for payment password) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-encrypt</artifactId>
         </dependency>
 
         <!-- Dubbo RPC -->
@@ -53,16 +95,10 @@
             <artifactId>ruoyi-common-dubbo</artifactId>
         </dependency>
 
-        <!-- API Documentation -->
+        <!-- Redis Cache -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-doc</artifactId>
-        </dependency>
-
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-log</artifactId>
+            <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
         <!-- Rate Limiter -->
@@ -75,18 +111,6 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-json</artifactId>
-        </dependency>
-
-        <!-- Encrypt (for payment password) -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-encrypt</artifactId>
-        </dependency>
-
-        <!-- Idempotent (for payment duplicate prevention) -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-idempotent</artifactId>
         </dependency>
 
         <!-- MySQL Driver -->
@@ -106,6 +130,13 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-api-user</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- Order API (for order service integration) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-order</artifactId>
             <version>${revision}</version>
         </dependency>
 

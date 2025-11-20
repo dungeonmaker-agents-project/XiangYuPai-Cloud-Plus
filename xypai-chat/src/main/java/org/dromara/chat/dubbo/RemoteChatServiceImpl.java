@@ -18,6 +18,8 @@ import org.dromara.common.core.exception.ServiceException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -197,7 +199,8 @@ public class RemoteChatServiceImpl implements RemoteChatService {
             .lastMessageTime(conversation.getLastMessageTime())
             .unreadCount(conversation.getUnreadCount())
             .isOnline(webSocketHandler.isUserOnline(conversation.getOtherUserId()))
-            .createTime(conversation.getCreateTime())
+            .createTime(conversation.getCreateTime() != null ?
+                LocalDateTime.ofInstant(conversation.getCreateTime().toInstant(), ZoneId.systemDefault()) : null)
             .build();
     }
 
@@ -217,7 +220,8 @@ public class RemoteChatServiceImpl implements RemoteChatService {
             .duration(message.getDuration())
             .status(message.getStatus())
             .isRecalled(message.getIsRecalled())
-            .createdAt(message.getCreateTime())
+            .createdAt(message.getCreateTime() != null ?
+                LocalDateTime.ofInstant(message.getCreateTime().toInstant(), ZoneId.systemDefault()) : null)
             .build();
     }
 }

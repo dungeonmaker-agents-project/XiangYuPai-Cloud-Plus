@@ -33,6 +33,9 @@ public class SkillUpdateDto {
     @Schema(description = "Price")
     private BigDecimal price;
 
+    @Schema(description = "Price per hour")
+    private BigDecimal pricePerHour;
+
     @Schema(description = "Price unit: 局, 小时")
     private String priceUnit;
 

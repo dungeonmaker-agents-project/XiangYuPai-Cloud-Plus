@@ -231,7 +231,7 @@ public class MessageHomePageTest extends BaseTest {
     public void testDeleteConversation_Success() throws Exception {
         // Given: Create test conversation
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 5);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
 
         // When: Delete conversation
         mockMvc.perform(delete("/api/message/conversation/" + conversationId)
@@ -268,7 +268,7 @@ public class MessageHomePageTest extends BaseTest {
     public void testDeleteConversation_NoPermission() throws Exception {
         // Given: User 1 creates conversation
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 3);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
 
         // When: User 3 tries to delete User 1's conversation
         mockMvc.perform(delete("/api/message/conversation/" + conversationId)
@@ -283,8 +283,8 @@ public class MessageHomePageTest extends BaseTest {
     public void testDeleteConversation_Bidirectional() throws Exception {
         // Given: Create bidirectional conversation
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 3);
-        Long conv1Id = testData.userConversation.getConversationId();
-        Long conv2Id = testData.otherUserConversation.getConversationId();
+        Long conv1Id = testData.userConversation.getId();
+        Long conv2Id = testData.otherUserConversation.getId();
 
         // When: User 1 deletes their conversation
         mockMvc.perform(delete("/api/message/conversation/" + conv1Id)

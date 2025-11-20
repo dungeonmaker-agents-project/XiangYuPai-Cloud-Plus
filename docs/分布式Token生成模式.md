@@ -97,18 +97,18 @@ public class MyTokenService {
 如果你想复用完整的认证逻辑（包括密码验证、用户查询等）：
 
 ```java
-import org.dromara.auth.service.IAuthStrategy;
-import org.dromara.auth.domain.vo.LoginVo;
+import org.dromara.xypai.auth.service.IAuthStrategy;
+import org.dromara.xypai.auth.domain.vo.LoginVo;
 import org.dromara.system.api.domain.vo.RemoteClientVo;
 import org.dromara.common.json.utils.JsonUtils;
 
 @Service
 public class MyAuthService {
-    
+
     // 注入PasswordAuthStrategy（需要ruoyi-auth依赖）
     @Autowired
     private IAuthStrategy passwordAuthStrategy;
-    
+
     /**
      * 在任何微服务中使用PasswordAuthStrategy
      */
@@ -120,9 +120,9 @@ public class MyAuthService {
         loginBody.put("tenantId", tenantId);
         loginBody.put("code", "");
         loginBody.put("uuid", "");
-        
+
         String loginBodyJson = JsonUtils.toJsonString(loginBody);
-        
+
         // 2. 构建RemoteClientVo
         RemoteClientVo clientVo = new RemoteClientVo();
         clientVo.setClientId("custom-client-id");
@@ -130,10 +130,10 @@ public class MyAuthService {
         clientVo.setDeviceType("pc");
         clientVo.setTimeout(1800L);
         clientVo.setStatus("0");
-        
+
         // 3. 直接调用认证策略
         LoginVo loginVo = passwordAuthStrategy.login(loginBodyJson, clientVo);
-        
+
         return loginVo;
     }
 }

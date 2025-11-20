@@ -1,7 +1,9 @@
 package org.dromara.xypai.chat;
 
-import org.dromara.xypai.chat.domain.*;
-import org.dromara.xypai.chat.mapper.*;
+import org.dromara.chat.domain.entity.Conversation;
+import org.dromara.chat.domain.entity.Message;
+import org.dromara.chat.mapper.ConversationMapper;
+import org.dromara.chat.mapper.MessageMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -101,13 +103,14 @@ public abstract class BaseTest {
      * Create test conversation
      */
     protected Conversation createTestConversation(Long userId, Long otherUserId) {
-        Conversation conversation = new Conversation();
-        conversation.setUserId(userId);
-        conversation.setOtherUserId(otherUserId);
-        conversation.setLastMessage("Test message");
-        conversation.setLastMessageTime(LocalDateTime.now());
-        conversation.setUnreadCount(0);
-        conversation.setIsDeleted(false);
+        Conversation conversation = Conversation.builder()
+            .userId(userId)
+            .otherUserId(otherUserId)
+            .lastMessage("Test message")
+            .lastMessageTime(LocalDateTime.now())
+            .unreadCount(0)
+            .deleted(0)
+            .build();
         conversationMapper.insert(conversation);
         return conversation;
     }
@@ -116,15 +119,16 @@ public abstract class BaseTest {
      * Create test message
      */
     protected Message createTestMessage(Long conversationId, Long senderId, Long receiverId, String messageType, String content) {
-        Message message = new Message();
-        message.setConversationId(conversationId);
-        message.setSenderId(senderId);
-        message.setReceiverId(receiverId);
-        message.setMessageType(messageType);
-        message.setContent(content);
-        message.setStatus(1); // Delivered
-        message.setIsRecalled(false);
-        message.setIsDeleted(false);
+        Message message = Message.builder()
+            .conversationId(conversationId)
+            .senderId(senderId)
+            .receiverId(receiverId)
+            .messageType(messageType)
+            .content(content)
+            .status(1) // Delivered
+            .isRecalled(false)
+            .deleted(0)
+            .build();
         messageMapper.insert(message);
         return message;
     }
@@ -156,7 +160,7 @@ public abstract class BaseTest {
         Conversation conv2 = createTestConversation(otherUserId, userId);
 
         // Create messages
-        List<Message> messages = createTestMessages(conv1.getConversationId(), userId, otherUserId, messageCount);
+        List<Message> messages = createTestMessages(conv1.getId(), userId, otherUserId, messageCount);
 
         return new ConversationTestData(conv1, conv2, messages);
     }

@@ -6,9 +6,9 @@ import cn.dev33.satoken.httpauth.basic.SaHttpBasicUtil;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.same.SaSameUtil;
 import cn.dev33.satoken.util.SaResult;
-import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.constant.HttpStatus;
 import org.dromara.common.core.utils.SpringUtils;
+import org.dromara.common.redis.utils.RedisUtils;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -23,9 +23,13 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  *
  * @author Lion Li
  */
-@Slf4j
 @AutoConfiguration
 public class SecurityConfiguration implements WebMvcConfigurer {
+
+    /**
+     * 统一的Redis key，所有服务使用此key读取Same-Token
+     */
+    private static final String SAME_TOKEN_REDIS_KEY = "satoken:var:same-token";
 
     /**
      * 注册sa-token的拦截器
@@ -46,36 +50,23 @@ public class SecurityConfiguration implements WebMvcConfigurer {
             .addExclude("/actuator", "/actuator/**")
             .setAuth(obj -> {
                 if (SaManager.getConfig().getCheckSameToken()) {
-                    // 🔍 添加详细诊断日志
-                    try {
-                        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-                        String requestUri = request.getRequestURI();
-                        String requestSameToken = request.getHeader(SaSameUtil.SAME_TOKEN);
-                        String expectedSameToken = SaSameUtil.getToken();
-                        String serviceName = SpringUtils.getProperty("spring.application.name");
-                        
-                        log.info("\n🔐 [SAME-TOKEN CHECK] {} - 验证请求是否来自Gateway", serviceName);
-                        log.info("   请求路径: {}", requestUri);
-                        log.info("   请求中的 Same-Token: {}", requestSameToken != null ? 
-                            (requestSameToken.length() > 40 ? requestSameToken.substring(0, 40) + "..." : requestSameToken) : 
-                            "❌ NULL");
-                        log.info("   期望的 Same-Token: {}", expectedSameToken != null ? 
-                            (expectedSameToken.length() > 40 ? expectedSameToken.substring(0, 40) + "..." : expectedSameToken) : 
-                            "❌ NULL");
-                        log.info("   两者是否一致: {}", requestSameToken != null && requestSameToken.equals(expectedSameToken));
-                        
-                        // 执行原始验证
-                        SaSameUtil.checkCurrentRequestToken();
-                        
-                        log.info("   ✅ Same-Token验证通过\n");
-                    } catch (Exception e) {
-                        log.error("\n   ❌ Same-Token验证失败: {}", e.getMessage());
-                        log.error("   异常类型: {}", e.getClass().getName());
-                        log.error("   💡 可能原因:");
-                        log.error("      1. Gateway 未正确添加 Same-Token header");
-                        log.error("      2. 微服务和 Gateway 的 Same-Token 不同步");
-                        log.error("      3. check-same-token 配置不一致\n");
-                        throw e;
+                    HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+
+                    // 使用自定义验证逻辑，从Redis读取Gateway生成的Same-Token
+                    // 原因：WebFlux和Servlet环境下SaSameUtil内部存储机制不同
+                    String expectedToken = RedisUtils.getCacheObject(SAME_TOKEN_REDIS_KEY);
+                    String actualToken = request.getHeader(SaSameUtil.SAME_TOKEN);
+
+                    if (expectedToken == null || expectedToken.isEmpty()) {
+                        throw new RuntimeException("Redis中的Same-Token未初始化或已过期");
+                    }
+
+                    if (actualToken == null || actualToken.isEmpty()) {
+                        throw new RuntimeException("请求头中未携带Same-Token");
+                    }
+
+                    if (!expectedToken.equals(actualToken)) {
+                        throw new RuntimeException("Same-Token不匹配");
                     }
                 }
             })

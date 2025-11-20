@@ -46,7 +46,9 @@ public class FeedController extends BaseController {
         @Valid FeedListQueryDTO queryDTO
     ) {
         queryDTO.setTabType(tabType);
-        Page<FeedListVO> page = feedService.getFeedList(queryDTO);
+        // 获取当前用户ID(如果已登录)
+        Long userId = StpUtil.isLogin() ? StpUtil.getLoginIdAsLong() : null;
+        Page<FeedListVO> page = feedService.getFeedList(queryDTO, userId);
         return R.ok(page);
     }
 
@@ -74,7 +76,7 @@ public class FeedController extends BaseController {
         StpUtil.checkLogin();
         Long userId = StpUtil.getLoginIdAsLong();
         Long feedId = feedService.publishFeed(publishDTO, userId);
-        return R.ok(feedId, "发布成功");
+        return R.ok("发布成功", feedId);
     }
 
     /**
@@ -89,7 +91,7 @@ public class FeedController extends BaseController {
         StpUtil.checkLogin();
         Long userId = StpUtil.getLoginIdAsLong();
         feedService.deleteFeed(feedId, userId);
-        return R.ok(null, "删除成功");
+        return R.ok("删除成功");
     }
 
 }

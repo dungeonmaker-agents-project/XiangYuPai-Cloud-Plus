@@ -105,11 +105,11 @@ public class InteractionServiceImpl implements IInteractionService {
         }
 
         // 1. 查询是否已收藏
-        LambdaQueryWrapper<Collection> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Collection::getUserId, userId)
-               .eq(Collection::getTargetType, targetType)
-               .eq(Collection::getTargetId, targetId);
-        Collection existingCollection = collectionMapper.selectOne(wrapper);
+        LambdaQueryWrapper<ContentCollection> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ContentCollection::getUserId, userId)
+               .eq(ContentCollection::getTargetType, targetType)
+               .eq(ContentCollection::getTargetId, targetId);
+        ContentCollection existingCollection = collectionMapper.selectOne(wrapper);
 
         boolean isCollected;
         int newCount;
@@ -120,7 +120,7 @@ public class InteractionServiceImpl implements IInteractionService {
                 throw new ServiceException("已经收藏过了");
             }
 
-            Collection collection = Collection.builder()
+            ContentCollection collection = ContentCollection.builder()
                 .userId(userId)
                 .targetType(targetType)
                 .targetId(targetId)

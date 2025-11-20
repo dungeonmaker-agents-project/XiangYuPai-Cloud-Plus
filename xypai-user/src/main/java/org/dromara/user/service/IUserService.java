@@ -4,8 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import org.dromara.common.core.domain.R;
 import org.dromara.user.domain.entity.User;
 import org.dromara.user.domain.dto.*;
-import org.dromara.user.domain.vo.UserProfileVo;
-import org.dromara.user.domain.vo.UserSimpleVo;
+import org.dromara.user.domain.vo.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -118,4 +117,42 @@ public interface IUserService extends IService<User> {
      * @return 结果
      */
     boolean updateLastLoginInfo(Long userId, String loginIp);
+
+    /**
+     * 获取用户动态列表
+     *
+     * @param userId   用户ID
+     * @param page     页码
+     * @param pageSize 每页数量
+     * @return 动态列表
+     */
+    R<PostListVo> getUserPosts(Long userId, Integer page, Integer pageSize);
+
+    /**
+     * 获取用户收藏列表
+     *
+     * @param userId   用户ID
+     * @param page     页码
+     * @param pageSize 每页数量
+     * @return 收藏列表
+     */
+    R<FavoriteListVo> getUserFavorites(Long userId, Integer page, Integer pageSize);
+
+    /**
+     * 获取用户点赞列表
+     *
+     * @param userId   用户ID
+     * @param page     页码
+     * @param pageSize 每页数量
+     * @return 点赞列表
+     */
+    R<LikeListVo> getUserLikes(Long userId, Integer page, Integer pageSize);
+
+    /**
+     * 获取用户详细资料（包含技能）
+     *
+     * @param userId 用户ID
+     * @return 用户详细资料
+     */
+    R<ProfileInfoVo> getUserProfileInfo(Long userId);
 }

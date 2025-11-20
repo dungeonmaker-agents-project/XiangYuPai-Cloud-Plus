@@ -1,64 +1,34 @@
+# Tomcat
 server:
-  port: 9410
+  port: 9401
 
+# Spring
 spring:
   application:
+    # 应用名称
     name: xypai-order
+  profiles:
+    # 环境配置
+    active: @profiles.active@
 
-  # Database Configuration
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/xypai_order?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&autoReconnect=true&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true
-    username: ${DB_USER:root}
-    password: ${DB_PASSWORD:root}
-
-# MyBatis Plus Configuration
-mybatis-plus:
-  mapper-locations: classpath*:mapper/**/*Mapper.xml
-  type-aliases-package: org.dromara.order.domain.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    cache-enabled: false
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
-  global-config:
-    db-config:
-      id-type: ASSIGN_ID
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-    banner: false
-
-# Sa-Token Configuration
-sa-token:
-  token-name: Authorization
-  timeout: 2592000
-  active-timeout: -1
-  is-concurrent: true
-  is-share: false
-  token-style: uuid
-  is-log: false
-
-# Logging Configuration
-logging:
-  level:
-    root: INFO
-    org.dromara.order: DEBUG
-    org.springframework: WARN
-    com.baomidou.mybatisplus: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
-  file:
-    name: logs/xypai-order/order.log
-    max-size: 100MB
-    max-history: 30
-
-# Actuator Configuration
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: when-authorized
+--- # nacos 配置
+spring:
+  cloud:
+    nacos:
+      # nacos 服务地址
+      server-addr: @nacos.server@
+      username: @nacos.username@
+      password: @nacos.password@
+      discovery:
+        # 注册组
+        group: @nacos.discovery.group@
+        namespace: ${spring.profiles.active}
+      config:
+        # 配置组
+        group: @nacos.config.group@
+        namespace: ${spring.profiles.active}
+  config:
+    import:
+      - optional:nacos:application-common.yml
+      - optional:nacos:datasource.yml
+      - optional:nacos:${spring.application.name}.yml

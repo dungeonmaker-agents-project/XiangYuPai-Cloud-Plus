@@ -20,17 +20,3 @@ websocket:
   enabled: true
   path: /ws
   allowed-origins: "*"
-
-# Dubbo配置
-dubbo:
-  application:
-    name: ${spring.application.name}
-  protocol:
-    name: dubbo
-    port: -1
-  registry:
-    address: nacos://${spring.cloud.nacos.server-addr}
-    group: ${spring.cloud.nacos.discovery.group}
-    parameters:
-      namespace: ${spring.cloud.nacos.discovery.namespace}
-

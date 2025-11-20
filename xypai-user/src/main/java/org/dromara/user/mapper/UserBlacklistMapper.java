@@ -51,4 +51,15 @@ public interface UserBlacklistMapper extends BaseMapper<UserBlacklist> {
         AND deleted = 0
         """)
     boolean hasBlacklist(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+
+    /**
+     * 查询黑名单记录 (别名方法)
+     *
+     * @param userId        用户ID
+     * @param blockedUserId 被拉黑用户ID
+     * @return 黑名单记录
+     */
+    default UserBlacklist selectByUserAndBlocked(Long userId, Long blockedUserId) {
+        return selectBlacklist(userId, blockedUserId);
+    }
 }

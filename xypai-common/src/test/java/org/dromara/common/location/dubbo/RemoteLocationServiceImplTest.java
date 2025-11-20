@@ -74,7 +74,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isNotNull();
         assertThat(result.getData().getDistance()).isEqualByComparingTo(expectedDistance);
         assertThat(result.getData().getUnit()).isEqualTo("km");
@@ -99,7 +99,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("起点坐标无效");
 
         // Verify
@@ -121,7 +121,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("终点坐标无效");
 
         // Verify
@@ -160,7 +160,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).hasSize(2);
         assertThat(result.getData().get(0).getId()).isEqualTo(1001L);
         assertThat(result.getData().get(1).getId()).isEqualTo(1002L);
@@ -180,7 +180,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEmpty();
 
         // Verify
@@ -205,7 +205,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("起点坐标无效");
     }
 
@@ -220,7 +220,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -239,7 +239,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
     }
 
@@ -267,7 +267,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isNotNull();
         assertThat(result.getData().getCityCode()).isEqualTo(cityCode);
         assertThat(result.getData().getCityName()).isEqualTo("北京");
@@ -289,7 +289,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("城市不存在");
 
         // Verify
@@ -304,7 +304,7 @@ public class RemoteLocationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("功能未实现");
     }
 }

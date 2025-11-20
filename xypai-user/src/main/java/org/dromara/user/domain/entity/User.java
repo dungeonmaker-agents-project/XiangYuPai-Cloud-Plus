@@ -29,8 +29,9 @@ public class User implements Serializable {
 
     /**
      * 用户ID（主键）
+     * 使用INPUT类型，允许手动指定ID（由auth服务生成）
      */
-    @TableId(value = "user_id", type = IdType.AUTO)
+    @TableId(value = "user_id", type = IdType.INPUT)
     private Long userId;
 
     /**
@@ -118,6 +119,12 @@ public class User implements Serializable {
     private BigDecimal longitude;
 
     /**
+     * 隐私设置 - 资料可见性 (1=公开, 2=仅粉丝, 3=私密)
+     */
+    @TableField("privacy_profile")
+    private Integer privacyProfile;
+
+    /**
      * 是否在线（0-否，1-是）
      */
     @TableField("is_online")
@@ -126,13 +133,13 @@ public class User implements Serializable {
     /**
      * 创建时间
      */
-    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    @TableField(value = "created_at")
     private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
+    @TableField(value = "updated_at")
     private LocalDateTime updatedAt;
 
     /**

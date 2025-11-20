@@ -125,7 +125,7 @@ public class MessageFlowIntegrationTest extends BaseTest {
 
         // Setup: Create initial conversation
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 2);
-        Long conversationId = testData.userConversation.getConversationId();
+        Long conversationId = testData.userConversation.getId();
         System.out.println("Setup: Initial conversation created with 2 messages");
 
         // Step 1: User 2 replies to the conversation
@@ -487,8 +487,8 @@ public class MessageFlowIntegrationTest extends BaseTest {
 
         // Setup: Create conversation with messages
         var testData = createConversationWithMessages(TEST_USER_1, TEST_USER_2, 5);
-        Long conv1Id = testData.userConversation.getConversationId();
-        Long conv2Id = testData.otherUserConversation.getConversationId();
+        Long conv1Id = testData.userConversation.getId();
+        Long conv2Id = testData.otherUserConversation.getId();
         System.out.println("Setup: Created conversation with 5 messages");
 
         // Step 1: User 1 checks conversation list

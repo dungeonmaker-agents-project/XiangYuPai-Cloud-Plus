@@ -1,7 +1,7 @@
 package org.dromara.common.notification.dubbo;
 
 import org.dromara.common.core.domain.R;
-import org.dromara.common.notification.domain.Notification;
+import org.dromara.common.notification.domain.entity.Notification;
 import org.dromara.common.notification.domain.bo.NotificationCreateBo;
 import org.dromara.common.notification.domain.vo.UnreadCountVo;
 import org.dromara.common.notification.mapper.NotificationMapper;
@@ -64,7 +64,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -72,8 +72,8 @@ public class RemoteNotificationServiceImplTest {
             bo.getUserId().equals(userId) &&
             bo.getFromUserId().equals(fromUserId) &&
             bo.getType().equals("like") &&
-            bo.getContentType().equals("post") &&
-            bo.getContentId().equals(contentId)
+            bo.getBizType().equals("post") &&
+            bo.getBizId().equals(contentId)
         ));
     }
 
@@ -87,7 +87,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isFalse();
 
         // Verify - 不应该创建通知
@@ -109,7 +109,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -136,7 +136,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
 
         // Verify - 内容应该被截断
         verify(notificationService).createNotification(argThat(bo ->
@@ -174,7 +174,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -218,7 +218,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -248,7 +248,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -268,7 +268,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -293,15 +293,15 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
         verify(notificationService).createNotification(argThat(bo ->
             bo.getUserId().equals(userId) &&
             bo.getType().equals("activity") &&
-            bo.getContentType().equals("activity") &&
-            bo.getContentId().equals(activityId)
+            bo.getBizType().equals("activity") &&
+            bo.getBizId().equals(activityId)
         ));
     }
 
@@ -324,7 +324,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEqualTo(11L);
 
         // Verify
@@ -347,7 +347,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEqualTo(5L);
 
         // Verify
@@ -368,7 +368,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isEqualTo(0L);
     }
 
@@ -390,7 +390,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isTrue();
+        assertThat(R.isSuccess(result)).isTrue();
         assertThat(result.getData()).isTrue();
 
         // Verify
@@ -411,7 +411,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("通知不存在");
 
         // Verify
@@ -437,7 +437,7 @@ public class RemoteNotificationServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
+        assertThat(R.isSuccess(result)).isFalse();
         assertThat(result.getMsg()).contains("无权限删除此通知");
 
         // Verify

@@ -66,4 +66,13 @@ public class UserProfileVo {
 
     @Schema(description = "Privacy settings")
     private PrivacyVo privacy;
+
+    @Schema(description = "Can view full profile")
+    private Boolean canViewProfile;
+
+    @Schema(description = "Can view moments/posts")
+    private Boolean canViewMoments;
+
+    @Schema(description = "Can view skills")
+    private Boolean canViewSkills;
 }

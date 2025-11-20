@@ -14,26 +14,79 @@
     <description>XiangYuPai Chat  Messaging Service</description>
 
     <dependencies>
-        <!-- Core Dependencies -->
+
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
+
+        <!-- RuoYi Common Log -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-doc</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-web</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
 
-        <!-- Security (includes Sa-Token) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-dubbo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-seata</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-idempotent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-translation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-sensitive</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-encrypt</artifactId>
+        </dependency>
+
+        <!-- Chat Module Specific Dependencies -->
         <!-- Cache -->
         <dependency>
             <groupId>org.dromara</groupId>
@@ -44,30 +97,6 @@
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-oss</artifactId>
-        </dependency>
-
-        <!-- RPC - Dubbo -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-dubbo</artifactId>
-        </dependency>
-
-        <!-- API Documentation -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-doc</artifactId>
-        </dependency>
-
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-log</artifactId>
-        </dependency>
-
-        <!-- Translation -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-translation</artifactId>
         </dependency>
 
         <!-- WebSocket Support -->

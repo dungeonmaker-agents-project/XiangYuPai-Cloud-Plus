@@ -49,13 +49,13 @@ public class FeedDetailVO implements Serializable {
     private String summary;
 
     @Schema(description = "用户信息")
-    private FeedListVO.UserInfoVO userInfo;
+    private UserInfoVO userInfo;
 
     @Schema(description = "媒体列表")
-    private List<FeedListVO.MediaVO> mediaList;
+    private List<MediaVO> mediaList;
 
     @Schema(description = "话题列表")
-    private List<FeedListVO.TopicVO> topicList;
+    private List<TopicVO> topicList;
 
     @Schema(description = "地点名称")
     private String locationName;
@@ -99,5 +99,95 @@ public class FeedDetailVO implements Serializable {
     @Schema(description = "创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    /**
+     * 用户信息内嵌VO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "用户信息")
+    public static class UserInfoVO implements Serializable {
+        @Schema(description = "用户ID")
+        private Long id;
+
+        @Schema(description = "昵称")
+        private String nickname;
+
+        @Schema(description = "头像")
+        private String avatar;
+
+        @Schema(description = "性别: male=男, female=女")
+        private String gender;
+
+        @Schema(description = "年龄")
+        private Integer age;
+
+        @Schema(description = "是否已关注")
+        private Boolean isFollowed;
+
+        @Schema(description = "是否实名认证")
+        private Boolean isRealVerified;
+
+        @Schema(description = "是否大神认证")
+        private Boolean isGodVerified;
+
+        @Schema(description = "是否VIP")
+        private Boolean isVip;
+    }
+
+    /**
+     * 媒体信息内嵌VO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "媒体信息")
+    public static class MediaVO implements Serializable {
+        @Schema(description = "媒体ID")
+        private Long mediaId;
+
+        @Schema(description = "媒体类型: image/video")
+        private String mediaType;
+
+        @Schema(description = "媒体URL")
+        private String url;
+
+        @Schema(description = "缩略图URL")
+        private String thumbnailUrl;
+
+        @Schema(description = "宽度")
+        private Integer width;
+
+        @Schema(description = "高度")
+        private Integer height;
+
+        @Schema(description = "时长(秒,仅视频)")
+        private Integer duration;
+    }
+
+    /**
+     * 话题信息内嵌VO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "话题信息")
+    public static class TopicVO implements Serializable {
+        @Schema(description = "话题名称")
+        private String name;
+
+        @Schema(description = "话题描述")
+        private String description;
+
+        @Schema(description = "参与人数")
+        private Integer participantCount;
+
+        @Schema(description = "帖子数")
+        private Integer postCount;
+    }
 
 }

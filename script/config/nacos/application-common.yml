@@ -189,6 +189,27 @@ sa-token:
   # jwt秘钥
   jwt-secret-key: abcdefghijklmnopqrstuvwxyz
 
+# 安全配置
+security:
+  # 白名单配置（网关不校验此处的白名单）
+  ignore:
+    whites:
+      # 认证接口
+      - /auth/login
+      - /auth/login/sms
+      - /auth/login/password
+      - /auth/logout
+      - /auth/register
+      - /auth/code
+      # 短信接口
+      - /auth/sms/send
+      # 静态资源
+      - /*/v3/api-docs
+      - /*/swagger-ui.html
+      - /*/swagger-ui/**
+      - /*/swagger-resources/**
+      - /*/webjars/**
+
 # MyBatisPlus配置
 # https://baomidou.com/config/
 mybatis-plus:
