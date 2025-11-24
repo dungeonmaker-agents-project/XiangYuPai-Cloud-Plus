@@ -1,0 +1,96 @@
+# XyPai 平台 Gateway 路由配置
+# Data ID: ruoyi-gateway.yml
+# Group: DEFAULT_GROUP
+# 需要将以下路由配置添加到 Nacos 中的 ruoyi-gateway.yml
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        # ==================== XyPai 聚合服务层 ====================
+
+        # xypai-app-bff 业务聚合服务
+        - id: xypai-app-bff
+          uri: lb://xypai-app-bff
+          predicates:
+            - Path=/xypai-app-bff/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                # 限流 key 解析器
+                key-resolver: "#{@ipKeyResolver}"
+                # 每秒填充平均速率
+                redis-rate-limiter.replenishRate: 100
+                # 令牌桶上限
+                redis-rate-limiter.burstCapacity: 200
+
+        # ==================== XyPai 领域服务层 ====================
+
+        # xypai-user 用户服务
+        - id: xypai-user
+          uri: lb://xypai-user
+          predicates:
+            - Path=/xypai-user/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+
+        # xypai-content 内容服务
+        - id: xypai-content
+          uri: lb://xypai-content
+          predicates:
+            - Path=/xypai-content/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+
+        # xypai-chat 聊天服务
+        - id: xypai-chat
+          uri: lb://xypai-chat
+          predicates:
+            - Path=/xypai-chat/**
+          filters:
+            - StripPrefix=1
+
+        # xypai-order 订单服务
+        - id: xypai-order
+          uri: lb://xypai-order
+          predicates:
+            - Path=/xypai-order/**
+          filters:
+            - StripPrefix=1
+
+        # xypai-payment 支付服务
+        - id: xypai-payment
+          uri: lb://xypai-payment
+          predicates:
+            - Path=/xypai-payment/**
+          filters:
+            - StripPrefix=1
+
+        # xypai-common 通用服务
+        - id: xypai-common
+          uri: lb://xypai-common
+          predicates:
+            - Path=/xypai-common/**
+          filters:
+            - StripPrefix=1
+
+        # ==================== XyPai 基础设施层 ====================
+
+        # xypai-auth 认证服务
+        - id: xypai-auth
+          uri: lb://xypai-auth
+          predicates:
+            - Path=/xypai-auth/**
+          filters:
+            - StripPrefix=1

@@ -1,43 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.dromara</groupId>
         <artifactId>ruoyi-cloud-plus</artifactId>
         <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>xypai-common</artifactId>
-    <packaging>jar</packaging>
-
-    <description>
-        XiangYuPai Common Services - 享遇派通用服务模块
-        统一微服务包含: 位置服务、媒体上传、通知服务、举报审核
-        Single Spring Boot Application for all common services
-    </description>
+    <artifactId>xypai-chat</artifactId>
+    <description>XiangYuPai Chat  Messaging Service</description>
 
     <dependencies>
-        <!-- 核心依赖 -->
+
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
 
-        <!-- 日志 -->
+        <!-- RuoYi Common Log -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
-        <!-- 通用服务实现 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-service-impl</artifactId>
         </dependency>
 
-        <!-- API文档 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-doc</artifactId>
@@ -53,137 +47,81 @@
             <artifactId>ruoyi-common-mybatis</artifactId>
         </dependency>
 
-        <!-- RPC -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-dubbo</artifactId>
         </dependency>
 
-        <!-- 分布式事务 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-seata</artifactId>
         </dependency>
 
-        <!-- 幂等性支持 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-idempotent</artifactId>
         </dependency>
 
-        <!-- 多租户支持 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-tenant</artifactId>
         </dependency>
 
-        <!-- 安全认证 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-security</artifactId>
         </dependency>
 
-        <!-- 数据翻译 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-translation</artifactId>
         </dependency>
 
-        <!-- 敏感数据处理 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-sensitive</artifactId>
         </dependency>
 
-        <!-- 数据加密 -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-encrypt</artifactId>
         </dependency>
 
-        <!-- 缓存 -->
+        <!-- Chat Module Specific Dependencies -->
+        <!-- Cache -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
-        <!-- 对象存储 -->
+        <!-- OSS -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-oss</artifactId>
         </dependency>
 
-        <!-- Excel -->
+        <!-- WebSocket Support -->
         <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-excel</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-        <!-- EasyExcel for Excel export annotations -->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>easyexcel</artifactId>
-            <version>${easyexcel.version}</version>
-        </dependency>
-
-        <!-- API接口 -->
+        <!-- API Interfaces -->
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-api-system</artifactId>
+            <artifactId>ruoyi-api-user</artifactId>
+            <version>${revision}</version>
         </dependency>
-
         <dependency>
             <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-api-resource</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>xypai-api-common</artifactId>
+            <artifactId>xypai-api-chat</artifactId>
             <version>${revision}</version>
         </dependency>
 
-        <!-- HTTP客户端 -->
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-http</artifactId>
-        </dependency>
-
-        <!-- 邮件发送 -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-mail</artifactId>
-        </dependency>
-
-        <!-- 短信服务 -->
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-sms</artifactId>
-        </dependency>
-
-        <!-- 测试依赖 -->
+        <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- RestAssured for API Integration Testing -->
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>spring-mock-mvc</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- JUnit Platform Suite for test organization -->
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-suite-api</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -205,5 +143,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

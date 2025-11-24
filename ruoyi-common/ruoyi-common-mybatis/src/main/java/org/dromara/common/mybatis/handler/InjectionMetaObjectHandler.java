@@ -58,8 +58,14 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
                 }
             } else {
                 Date date = new Date();
+                // 支持标准命名（createTime, updateTime）
                 this.strictInsertFill(metaObject, "createTime", Date.class, date);
                 this.strictInsertFill(metaObject, "updateTime", Date.class, date);
+
+                // 支持蛇形命名（created_at, updated_at）- 用于 xypai-content 等模块
+                this.strictInsertFill(metaObject, "createdAt", () -> java.time.LocalDateTime.now(), java.time.LocalDateTime.class);
+                this.strictInsertFill(metaObject, "updatedAt", () -> java.time.LocalDateTime.now(), java.time.LocalDateTime.class);
+                this.strictInsertFill(metaObject, "version", () -> 0, Integer.class);
             }
         } catch (Exception e) {
             throw new ServiceException("自动注入异常 => " + e.getMessage(), HttpStatus.HTTP_UNAUTHORIZED);
@@ -87,7 +93,11 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
                     baseEntity.setUpdateBy(DEFAULT_USER_ID);
                 }
             } else {
+                // 支持标准命名（updateTime）
                 this.strictUpdateFill(metaObject, "updateTime", Date.class, new Date());
+
+                // 支持蛇形命名（updated_at）- 用于 xypai-content 等模块
+                this.strictUpdateFill(metaObject, "updatedAt", () -> java.time.LocalDateTime.now(), java.time.LocalDateTime.class);
             }
         } catch (Exception e) {
             throw new ServiceException("自动注入异常 => " + e.getMessage(), HttpStatus.HTTP_UNAUTHORIZED);
