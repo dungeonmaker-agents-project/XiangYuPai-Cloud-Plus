@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
+import org.dromara.appuser.api.domain.vo.LimitedTimeUserVo;
 import org.dromara.user.domain.entity.User;
 
 import java.math.BigDecimal;
@@ -95,4 +96,88 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Update("UPDATE users SET last_login_at = NOW(), last_login_ip = #{loginIp}, updated_at = NOW() WHERE user_id = #{userId} AND deleted = 0")
     int updateLastLoginInfo(@Param("userId") Long userId, @Param("loginIp") String loginIp);
+
+    /**
+     * 查询限时专享用户列表（带技能和价格信息）
+     *
+     * JOIN users + skills + user_stats
+     * 只返回有上架技能的用户
+     */
+    @Select("<script>"
+        + "SELECT "
+        + "  u.user_id AS userId, "
+        + "  u.nickname, "
+        + "  u.avatar, "
+        + "  u.gender, "
+        + "  YEAR(CURDATE()) - YEAR(u.birthday) AS age, "
+        + "  u.is_online AS isOnline, "
+        + "  u.bio, "
+        + "  <if test='latitude != null and longitude != null'>"
+        + "  CAST(ST_Distance_Sphere("
+        + "    u.location, "
+        + "    ST_GeomFromText(CONCAT('POINT(', #{longitude}, ' ', #{latitude}, ')'), 4326)"
+        + "  ) AS SIGNED) AS distance, "
+        + "  </if>"
+        + "  <if test='latitude == null or longitude == null'>"
+        + "  0 AS distance, "
+        + "  </if>"
+        + "  s.skill_id AS skillId, "
+        + "  s.skill_name AS skillName, "
+        + "  s.price, "
+        + "  s.price_unit AS priceUnit, "
+        + "  s.game_rank AS skillLevel, "
+        + "  s.rating, "
+        + "  s.order_count AS orderCount, "
+        + "  us.fans_count AS fansCount, "
+        + "  us.likes_count AS likesCount "
+        + "FROM users u "
+        + "INNER JOIN skills s ON u.user_id = s.user_id AND s.is_online = 1 AND s.deleted = 0 "
+        + "LEFT JOIN user_stats us ON u.user_id = us.user_id AND us.deleted = 0 "
+        + "WHERE u.deleted = 0 "
+        + "<if test='gender != null and gender != \"all\"'>"
+        + "  AND u.gender = #{gender} "
+        + "</if>"
+        + "<if test='cityCode != null'>"
+        + "  AND u.residence LIKE CONCAT('%', #{cityCode}, '%') "
+        + "</if>"
+        + "<if test='districtCode != null'>"
+        + "  AND u.residence LIKE CONCAT('%', #{districtCode}, '%') "
+        + "</if>"
+        + "GROUP BY u.user_id "
+        + "ORDER BY u.is_online DESC, u.user_id DESC "
+        + "LIMIT #{offset}, #{pageSize}"
+        + "</script>")
+    List<LimitedTimeUserVo> queryLimitedTimeUsers(
+        @Param("gender") String gender,
+        @Param("cityCode") String cityCode,
+        @Param("districtCode") String districtCode,
+        @Param("latitude") Double latitude,
+        @Param("longitude") Double longitude,
+        @Param("offset") Integer offset,
+        @Param("pageSize") Integer pageSize
+    );
+
+    /**
+     * 统计限时专享用户总数
+     */
+    @Select("<script>"
+        + "SELECT COUNT(DISTINCT u.user_id) "
+        + "FROM users u "
+        + "INNER JOIN skills s ON u.user_id = s.user_id AND s.is_online = 1 AND s.deleted = 0 "
+        + "WHERE u.deleted = 0 "
+        + "<if test='gender != null and gender != \"all\"'>"
+        + "  AND u.gender = #{gender} "
+        + "</if>"
+        + "<if test='cityCode != null'>"
+        + "  AND u.residence LIKE CONCAT('%', #{cityCode}, '%') "
+        + "</if>"
+        + "<if test='districtCode != null'>"
+        + "  AND u.residence LIKE CONCAT('%', #{districtCode}, '%') "
+        + "</if>"
+        + "</script>")
+    Integer countLimitedTimeUsers(
+        @Param("gender") String gender,
+        @Param("cityCode") String cityCode,
+        @Param("districtCode") String districtCode
+    );
 }

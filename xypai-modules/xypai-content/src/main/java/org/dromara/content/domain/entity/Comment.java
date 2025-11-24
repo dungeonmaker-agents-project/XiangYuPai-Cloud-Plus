@@ -59,19 +59,22 @@ public class Comment implements Serializable {
     /**
      * 点赞数
      */
+    @Builder.Default
     @TableField(fill = FieldFill.INSERT)
-    private Integer likeCount;
+    private Integer likeCount = 0;
 
     /**
      * 回复数
      */
+    @Builder.Default
     @TableField(fill = FieldFill.INSERT)
-    private Integer replyCount;
+    private Integer replyCount = 0;
 
     /**
      * 是否置顶: 0=否,1=是
      */
-    private Integer isTop;
+    @Builder.Default
+    private Integer isTop = 0;
 
     /**
      * 删除标记: 0=未删除,1=已删除
@@ -82,14 +85,14 @@ public class Comment implements Serializable {
     /**
      * 创建时间
      */
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private LocalDateTime createdAt;
 
     /**
      * 乐观锁
      */
     @Version
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private Integer version;
 
 }

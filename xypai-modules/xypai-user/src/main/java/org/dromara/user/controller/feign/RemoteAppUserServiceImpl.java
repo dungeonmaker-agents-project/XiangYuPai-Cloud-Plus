@@ -3,12 +3,19 @@ package org.dromara.user.controller.feign;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.dromara.appuser.api.RemoteAppUserService;
+import org.dromara.appuser.api.domain.vo.LimitedTimePageResult;
+import org.dromara.appuser.api.domain.vo.LimitedTimeUserVo;
 import org.dromara.appuser.api.model.AppLoginUser;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.exception.user.UserException;
 import org.dromara.user.domain.entity.User;
+import org.dromara.user.mapper.UserMapper;
 import org.dromara.user.service.IUserService;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.List;
 
 /**
  * App用户远程服务实现（Dubbo RPC Provider）
@@ -25,6 +32,7 @@ import org.springframework.stereotype.Service;
 public class RemoteAppUserServiceImpl implements RemoteAppUserService {
 
     private final IUserService userService;
+    private final UserMapper userMapper;
 
     @Override
     public AppLoginUser getUserByMobile(String mobile, String countryCode) throws UserException {
@@ -178,5 +186,48 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
         loginUser.setIsNewUser(isNewUser);
 
         return loginUser;
+    }
+
+    // ==================== 用户查询相关 ====================
+
+    @Override
+    public LimitedTimePageResult queryLimitedTimeUsers(
+        String gender,
+        String cityCode,
+        String districtCode,
+        Double latitude,
+        Double longitude,
+        Integer pageNum,
+        Integer pageSize
+    ) {
+        // Query users with skills from database
+        List<LimitedTimeUserVo> users = userMapper.queryLimitedTimeUsers(
+            gender,
+            cityCode,
+            districtCode,
+            latitude,
+            longitude,
+            (pageNum - 1) * pageSize, // offset
+            pageSize
+        );
+
+        // Get total count
+        Integer total = userMapper.countLimitedTimeUsers(gender, cityCode, districtCode);
+
+        // Calculate if there are more pages
+        boolean hasMore = (pageNum * pageSize) < total;
+
+        // Calculate age for each user
+        users.forEach(user -> {
+            if (user.getAge() == null) {
+                user.setAge(0); // Default age if birthday not set
+            }
+        });
+
+        return LimitedTimePageResult.builder()
+            .total(total)
+            .list(users)
+            .hasMore(hasMore)
+            .build();
     }
 }

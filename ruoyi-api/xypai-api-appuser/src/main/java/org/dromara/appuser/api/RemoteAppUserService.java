@@ -184,4 +184,36 @@ public interface RemoteAppUserService {
      * @return true=已设置，false=未设置
      */
     boolean hasPaymentPassword(Long userId);
+
+    // ==================== 用户查询相关 ====================
+
+    /**
+     * 查询限时专享用户列表（带技能和价格信息）
+     *
+     * <p>用途：供 xypai-app-bff 调用，获取有上架技能的用户列表（用于限时专享等场景）</p>
+     * <p>特点：</p>
+     * <ul>
+     *     <li>只返回有上架技能的用户</li>
+     *     <li>自动计算距离（基于用户location）</li>
+     *     <li>包含用户基本信息 + 技能信息 + 统计信息</li>
+     * </ul>
+     *
+     * @param gender       性别筛选 ("all", "male", "female")
+     * @param cityCode     城市代码 (可选)
+     * @param districtCode 区县代码 (可选)
+     * @param latitude     查询者纬度 (用于计算距离, 可选)
+     * @param longitude    查询者经度 (用于计算距离, 可选)
+     * @param pageNum      页码 (从1开始)
+     * @param pageSize     每页大小
+     * @return 限时专享用户分页结果
+     */
+    org.dromara.appuser.api.domain.vo.LimitedTimePageResult queryLimitedTimeUsers(
+        String gender,
+        String cityCode,
+        String districtCode,
+        Double latitude,
+        Double longitude,
+        Integer pageNum,
+        Integer pageSize
+    );
 }

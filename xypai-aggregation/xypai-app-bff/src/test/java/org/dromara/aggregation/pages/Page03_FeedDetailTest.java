@@ -146,7 +146,7 @@ public class Page03_FeedDetailTest {
 
             if (code != null && code == 200) {
                 Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
-                authTokenUserA = (String) data.get("access_token");
+                authTokenUserA = (String) data.get("token");
                 userIdA = String.valueOf(data.get("userId"));
 
                 log.info("✅ 用户A登录成功");
@@ -584,7 +584,7 @@ public class Page03_FeedDetailTest {
 
             if (code != null && code == 200) {
                 Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
-                authTokenUserB = (String) data.get("access_token");
+                authTokenUserB = (String) data.get("token");
                 userIdB = String.valueOf(data.get("userId"));
 
                 log.info("✅ 用户B登录成功");
