@@ -95,6 +95,9 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <mainClass>org.dromara.appbff.XyPaiAppBffApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
