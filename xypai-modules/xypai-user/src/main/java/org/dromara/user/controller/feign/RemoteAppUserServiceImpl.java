@@ -3,6 +3,10 @@ package org.dromara.user.controller.feign;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.dromara.appuser.api.RemoteAppUserService;
+import org.dromara.appuser.api.domain.dto.FilterQueryDto;
+import org.dromara.appuser.api.domain.vo.FilterConfigVo;
+import org.dromara.appuser.api.domain.vo.FilterUserPageResult;
+import org.dromara.appuser.api.domain.vo.FilterUserVo;
 import org.dromara.appuser.api.domain.vo.LimitedTimePageResult;
 import org.dromara.appuser.api.domain.vo.LimitedTimeUserVo;
 import org.dromara.appuser.api.model.AppLoginUser;
@@ -13,9 +17,12 @@ import org.dromara.user.mapper.UserMapper;
 import org.dromara.user.service.IUserService;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * App用户远程服务实现（Dubbo RPC Provider）
@@ -225,6 +232,115 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
         });
 
         return LimitedTimePageResult.builder()
+            .total(total)
+            .list(users)
+            .hasMore(hasMore)
+            .build();
+    }
+
+    // ==================== 筛选功能相关 ====================
+
+    @Override
+    public FilterConfigVo getFilterConfig(String type) {
+        boolean isOnline = "online".equalsIgnoreCase(type);
+
+        FilterConfigVo.FilterConfigVoBuilder builder = FilterConfigVo.builder()
+            .type(type);
+
+        if (isOnline) {
+            // 线上技能配置
+            List<String> gameNames = userMapper.selectDistinctGameNames();
+            List<String> gameRanks = userMapper.selectDistinctGameRanks();
+            builder.gameNames(gameNames);
+            builder.gameRanks(gameRanks);
+        } else {
+            // 线下技能配置
+            List<String> serviceTypes = userMapper.selectDistinctServiceTypes();
+            builder.serviceTypes(serviceTypes);
+        }
+
+        // 查询技能选项 (带用户数统计)
+        List<Map<String, Object>> skillOptionsRaw = userMapper.selectSkillOptions(type);
+        List<FilterConfigVo.SkillOptionVo> skillOptions = new ArrayList<>();
+        for (Map<String, Object> row : skillOptionsRaw) {
+            FilterConfigVo.SkillOptionVo option = FilterConfigVo.SkillOptionVo.builder()
+                .value(row.get("value") != null ? row.get("value").toString() : "")
+                .label(row.get("label") != null ? row.get("label").toString() : "")
+                .category(row.get("category") != null ? row.get("category").toString() : "")
+                .count(row.get("count") != null ? ((Number) row.get("count")).intValue() : 0)
+                .build();
+            skillOptions.add(option);
+        }
+        builder.skillOptions(skillOptions);
+
+        // 查询价格范围
+        Map<String, Object> priceRangeMap = userMapper.selectPriceRange(type);
+        if (priceRangeMap != null) {
+            Integer minPrice = priceRangeMap.get("minPrice") != null ?
+                ((BigDecimal) priceRangeMap.get("minPrice")).intValue() : 0;
+            Integer maxPrice = priceRangeMap.get("maxPrice") != null ?
+                ((BigDecimal) priceRangeMap.get("maxPrice")).intValue() : 100;
+            builder.priceRange(FilterConfigVo.PriceRangeVo.builder()
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .build());
+        }
+
+        return builder.build();
+    }
+
+    @Override
+    public FilterUserPageResult queryFilteredUsers(FilterQueryDto queryDto) {
+        // 解析价格范围
+        Integer priceMin = null;
+        Integer priceMax = null;
+        if (queryDto.getPriceRanges() != null && !queryDto.getPriceRanges().isEmpty()) {
+            // 取第一个价格范围 (如 "4-9", "10-19", "20+")
+            String priceRange = queryDto.getPriceRanges().get(0);
+            if (priceRange.contains("-")) {
+                String[] parts = priceRange.split("-");
+                priceMin = Integer.parseInt(parts[0]);
+                priceMax = Integer.parseInt(parts[1]);
+            } else if (priceRange.endsWith("+")) {
+                priceMin = Integer.parseInt(priceRange.replace("+", ""));
+            }
+        }
+
+        // 计算分页偏移
+        int offset = (queryDto.getPageNum() - 1) * queryDto.getPageSize();
+
+        // 查询用户列表
+        List<FilterUserVo> users = userMapper.queryFilteredUsers(
+            queryDto.getType(),
+            queryDto.getGender(),
+            queryDto.getAgeMin(),
+            queryDto.getAgeMax(),
+            queryDto.getStatus(),
+            queryDto.getSkills(),
+            priceMin,
+            priceMax,
+            queryDto.getLatitude(),
+            queryDto.getLongitude(),
+            offset,
+            queryDto.getPageSize()
+        );
+
+        // 统计总数
+        Integer total = userMapper.countFilteredUsers(
+            queryDto.getType(),
+            queryDto.getGender(),
+            queryDto.getAgeMin(),
+            queryDto.getAgeMax(),
+            queryDto.getStatus(),
+            queryDto.getSkills(),
+            priceMin,
+            priceMax
+        );
+
+        // 计算是否有更多
+        boolean hasMore = (queryDto.getPageNum() * queryDto.getPageSize()) < total;
+
+        return FilterUserPageResult.builder()
             .total(total)
             .list(users)
             .hasMore(hasMore)

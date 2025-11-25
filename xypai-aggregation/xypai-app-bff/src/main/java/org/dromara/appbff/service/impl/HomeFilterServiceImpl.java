@@ -1,52 +1,71 @@
 package org.dromara.appbff.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.appbff.domain.dto.FilterApplyDTO;
 import org.dromara.appbff.domain.vo.FilterConfigVO;
 import org.dromara.appbff.domain.vo.FilterResultVO;
 import org.dromara.appbff.domain.vo.UserCardVO;
 import org.dromara.appbff.service.HomeFilterService;
+import org.dromara.appuser.api.RemoteAppUserService;
+import org.dromara.appuser.api.domain.dto.FilterQueryDto;
+import org.dromara.appuser.api.domain.vo.FilterConfigVo;
+import org.dromara.appuser.api.domain.vo.FilterUserPageResult;
+import org.dromara.appuser.api.domain.vo.FilterUserVo;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * 首页筛选服务实现
+ * 首页筛选服务实现 (RPC实现)
  * <p>
- * 当前实现: Mock 数据
- * TODO: 实现真实的 RPC 调用聚合逻辑
+ * 通过 Dubbo RPC 调用 xypai-user 服务获取真实数据
  *
  * @author XyPai Team
- * @date 2025-11-24
+ * @date 2025-11-25
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class HomeFilterServiceImpl implements HomeFilterService {
+
+    @DubboReference
+    private RemoteAppUserService remoteAppUserService;
 
     @Override
     public FilterConfigVO getFilterConfig(String type) {
-        log.info("获取筛选配置, type: {}", type);
+        log.info("【筛选配置】获取筛选配置, type: {}", type);
 
         boolean isOnline = "online".equalsIgnoreCase(type);
 
-        // 构建筛选配置 (Mock 数据)
+        // 1. RPC调用获取数据库中的筛选配置
+        FilterConfigVo rpcConfig = remoteAppUserService.getFilterConfig(type);
+
+        // 2. 构建BFF响应
         FilterConfigVO config = FilterConfigVO.builder()
+            // 年龄范围 (固定配置)
             .ageRange(FilterConfigVO.AgeRange.builder()
                 .min(18)
                 .max(null) // null 表示不限
                 .build())
+            // 性别选项 (固定配置)
             .genderOptions(Arrays.asList(
                 FilterConfigVO.Option.builder().value("all").label("全部").build(),
                 FilterConfigVO.Option.builder().value("male").label("男").build(),
                 FilterConfigVO.Option.builder().value("female").label("女").build()
             ))
+            // 状态选项 (固定配置)
             .statusOptions(Arrays.asList(
                 FilterConfigVO.Option.builder().value("online").label("在线").build(),
                 FilterConfigVO.Option.builder().value("active_3d").label("近三天活跃").build(),
                 FilterConfigVO.Option.builder().value("active_7d").label("近七天活跃").build()
             ))
+            // 标签选项 (固定配置)
             .tagOptions(Arrays.asList(
                 FilterConfigVO.TagOption.builder().value("荣耀王者").label("荣耀王者").highlighted(true).build(),
                 FilterConfigVO.TagOption.builder().value("大神认证").label("大神认证").highlighted(true).build(),
@@ -57,21 +76,54 @@ public class HomeFilterServiceImpl implements HomeFilterService {
             ))
             .build();
 
-        // 线上模式独有的选项
+        // 3. 从RPC结果构建技能选项 (来自数据库)
+        if (rpcConfig != null && rpcConfig.getSkillOptions() != null) {
+            List<FilterConfigVO.SkillOption> skillOptions = rpcConfig.getSkillOptions().stream()
+                .map(opt -> FilterConfigVO.SkillOption.builder()
+                    .value(opt.getValue())
+                    .label(opt.getLabel() + " (" + opt.getCount() + "人)")
+                    .category(opt.getCategory())
+                    .build())
+                .collect(Collectors.toList());
+            config.setSkillOptions(skillOptions);
+        } else {
+            // 如果RPC返回空，使用默认配置
+            if (isOnline) {
+                config.setSkillOptions(Arrays.asList(
+                    FilterConfigVO.SkillOption.builder().value("荣耀王者").label("荣耀王者").category("王者荣耀").build(),
+                    FilterConfigVO.SkillOption.builder().value("王者").label("最强王者").category("王者荣耀").build(),
+                    FilterConfigVO.SkillOption.builder().value("星耀").label("至尊星耀").category("王者荣耀").build(),
+                    FilterConfigVO.SkillOption.builder().value("钻石").label("永恒钻石").category("王者荣耀").build()
+                ));
+            } else {
+                config.setSkillOptions(Arrays.asList(
+                    FilterConfigVO.SkillOption.builder().value("健身教练").label("健身教练").category("运动健身").build(),
+                    FilterConfigVO.SkillOption.builder().value("瑜伽老师").label("瑜伽老师").category("运动健身").build()
+                ));
+            }
+        }
+
+        // 4. 价格选项 (线上模式特有)
         if (isOnline) {
-            config.setSkillOptions(Arrays.asList(
-                FilterConfigVO.SkillOption.builder().value("尊贵钻金").label("尊贵钻金").category("王者荣耀").build(),
-                FilterConfigVO.SkillOption.builder().value("永恒钻石").label("永恒钻石").category("王者荣耀").build(),
-                FilterConfigVO.SkillOption.builder().value("至尊星耀").label("至尊星耀").category("王者荣耀").build(),
-                FilterConfigVO.SkillOption.builder().value("最强王者").label("最强王者").category("王者荣耀").build(),
-                FilterConfigVO.SkillOption.builder().value("荣耀王者").label("荣耀王者").category("王者荣耀").build(),
-                FilterConfigVO.SkillOption.builder().value("英雄联盟").label("英雄联盟").category("其他游戏").build()
-            ));
+            // 使用RPC返回的价格范围，或者默认值
+            int minPrice = 4;
+            int maxPrice = 30;
+            if (rpcConfig != null && rpcConfig.getPriceRange() != null) {
+                minPrice = rpcConfig.getPriceRange().getMinPrice() != null ?
+                    rpcConfig.getPriceRange().getMinPrice() : 4;
+                maxPrice = rpcConfig.getPriceRange().getMaxPrice() != null ?
+                    rpcConfig.getPriceRange().getMaxPrice() : 30;
+            }
 
             config.setPriceOptions(Arrays.asList(
-                FilterConfigVO.PriceOption.builder().value("4-9").label("4~9币").min(4).max(9).build(),
-                FilterConfigVO.PriceOption.builder().value("10-19").label("10~19币").min(10).max(19).build(),
-                FilterConfigVO.PriceOption.builder().value("20+").label("20币以上").min(20).max(null).build()
+                FilterConfigVO.PriceOption.builder()
+                    .value(minPrice + "-" + Math.min(minPrice + 5, maxPrice))
+                    .label(minPrice + "~" + Math.min(minPrice + 5, maxPrice) + "币")
+                    .min(minPrice).max(Math.min(minPrice + 5, maxPrice)).build(),
+                FilterConfigVO.PriceOption.builder()
+                    .value("10-19").label("10~19币").min(10).max(19).build(),
+                FilterConfigVO.PriceOption.builder()
+                    .value("20+").label("20币以上").min(20).max(null).build()
             ));
 
             config.setPositionOptions(Arrays.asList(
@@ -85,33 +137,35 @@ public class HomeFilterServiceImpl implements HomeFilterService {
             // 线下模式：不设置价格和位置选项
             config.setPriceOptions(null);
             config.setPositionOptions(null);
-
-            // 线下模式的技能选项
-            config.setSkillOptions(Arrays.asList(
-                FilterConfigVO.SkillOption.builder().value("健身教练").label("健身教练").category("运动健身").build(),
-                FilterConfigVO.SkillOption.builder().value("瑜伽老师").label("瑜伽老师").category("运动健身").build(),
-                FilterConfigVO.SkillOption.builder().value("摄影师").label("摄影师").category("摄影服务").build(),
-                FilterConfigVO.SkillOption.builder().value("化妆师").label("化妆师").category("美妆服务").build()
-            ));
         }
 
-        log.info("筛选配置返回成功, 技能数: {}", config.getSkillOptions().size());
+        log.info("【筛选配置】筛选配置返回成功, 技能选项数: {}",
+            config.getSkillOptions() != null ? config.getSkillOptions().size() : 0);
         return config;
     }
 
     @Override
     public FilterResultVO applyFilter(FilterApplyDTO dto) {
-        log.info("应用筛选条件, type: {}, pageNum: {}, pageSize: {}",
+        log.info("【筛选应用】应用筛选条件, type: {}, pageNum: {}, pageSize: {}",
             dto.getType(), dto.getPageNum(), dto.getPageSize());
 
-        // 统计筛选条件数量
-        int filterCount = 0;
+        // 1. 构建RPC查询DTO
+        FilterQueryDto queryDto = FilterQueryDto.builder()
+            .type(dto.getType())
+            .pageNum(dto.getPageNum())
+            .pageSize(dto.getPageSize())
+            .build();
+
+        // 2. 解析筛选条件
         List<String> summary = new ArrayList<>();
+        int filterCount = 0;
 
         FilterApplyDTO.FilterCriteria filters = dto.getFilters();
         if (filters != null) {
             // 年龄
             if (filters.getAge() != null) {
+                queryDto.setAgeMin(filters.getAge().getMin());
+                queryDto.setAgeMax(filters.getAge().getMax());
                 filterCount++;
                 String ageDesc = filters.getAge().getMin() + "岁";
                 if (filters.getAge().getMax() != null) {
@@ -124,6 +178,7 @@ public class HomeFilterServiceImpl implements HomeFilterService {
 
             // 性别
             if (filters.getGender() != null && !"all".equals(filters.getGender())) {
+                queryDto.setGender(filters.getGender());
                 filterCount++;
                 String genderLabel = "male".equals(filters.getGender()) ? "男" : "女";
                 summary.add("性别: " + genderLabel);
@@ -131,6 +186,7 @@ public class HomeFilterServiceImpl implements HomeFilterService {
 
             // 状态
             if (filters.getStatus() != null) {
+                queryDto.setStatus(filters.getStatus());
                 filterCount++;
                 String statusLabel = switch (filters.getStatus()) {
                     case "online" -> "在线";
@@ -143,36 +199,56 @@ public class HomeFilterServiceImpl implements HomeFilterService {
 
             // 技能
             if (filters.getSkills() != null && !filters.getSkills().isEmpty()) {
+                queryDto.setSkills(filters.getSkills());
                 filterCount++;
                 summary.add("技能: " + String.join(", ", filters.getSkills()));
             }
 
             // 价格
             if (filters.getPriceRange() != null && !filters.getPriceRange().isEmpty()) {
+                queryDto.setPriceRanges(filters.getPriceRange());
                 filterCount++;
                 summary.add("价格: " + String.join(", ", filters.getPriceRange()));
             }
 
-            // 位置
+            // 位置 (暂不传递给RPC，后续可扩展)
             if (filters.getPositions() != null && !filters.getPositions().isEmpty()) {
                 filterCount++;
                 summary.add("位置: " + String.join(", ", filters.getPositions()));
             }
 
-            // 标签
+            // 标签 (暂不传递给RPC，后续可扩展)
             if (filters.getTags() != null && !filters.getTags().isEmpty()) {
+                queryDto.setSkills(filters.getTags()); // 暂时用tags作为技能筛选
                 filterCount++;
                 summary.add("标签: " + String.join(", ", filters.getTags()));
             }
         }
 
-        // 构建 Mock 用户列表
-        List<UserCardVO> users = buildMockUserList(dto.getType(), dto.getPageSize());
+        // 3. RPC调用获取用户列表
+        FilterUserPageResult rpcResult = remoteAppUserService.queryFilteredUsers(queryDto);
 
-        // 构建结果
+        // 4. 转换RPC结果为BFF VO
+        List<UserCardVO> users;
+        long total = 0;
+        boolean hasMore = false;
+
+        if (rpcResult != null && rpcResult.getList() != null && !rpcResult.getList().isEmpty()) {
+            users = rpcResult.getList().stream()
+                .map(this::convertToUserCard)
+                .collect(Collectors.toList());
+            total = rpcResult.getTotal() != null ? rpcResult.getTotal() : 0;
+            hasMore = rpcResult.getHasMore() != null ? rpcResult.getHasMore() : false;
+            log.info("【筛选应用】RPC返回用户数: {}, 总数: {}", users.size(), total);
+        } else {
+            users = Collections.emptyList();
+            log.warn("【筛选应用】RPC返回空结果");
+        }
+
+        // 5. 构建响应
         FilterResultVO result = FilterResultVO.builder()
-            .total((long) users.size())
-            .hasMore(false)
+            .total(total)
+            .hasMore(hasMore)
             .list(users)
             .appliedFilters(FilterResultVO.AppliedFilters.builder()
                 .count(filterCount)
@@ -180,47 +256,60 @@ public class HomeFilterServiceImpl implements HomeFilterService {
                 .build())
             .build();
 
-        log.info("筛选结果返回成功, 用户数: {}, 筛选条件数: {}", users.size(), filterCount);
+        log.info("【筛选应用】筛选结果返回成功, 用户数: {}, 筛选条件数: {}", users.size(), filterCount);
         return result;
     }
 
     /**
-     * 构建 Mock 用户列表
+     * 转换RPC VO为BFF UserCardVO
      */
-    private List<UserCardVO> buildMockUserList(String type, int pageSize) {
-        List<UserCardVO> users = new ArrayList<>();
-        boolean isOnline = "online".equalsIgnoreCase(type);
+    private UserCardVO convertToUserCard(FilterUserVo rpcUser) {
+        UserCardVO user = new UserCardVO();
+        user.setUserId(rpcUser.getUserId());
+        user.setNickname(rpcUser.getNickname());
+        user.setAvatar(rpcUser.getAvatar());
 
-        for (int i = 1; i <= Math.min(pageSize, 5); i++) {
-            UserCardVO user = new UserCardVO();
-            user.setUserId((long) (1000 + i));
-            user.setAvatar("https://example.com/avatar" + i + ".jpg");
-            user.setNickname(isOnline ? "线上陪玩" + i : "线下教练" + i);
-            user.setAge(20 + i);
-            user.setGender(i % 2 == 0 ? 1 : 2); // 1-男, 2-女
-            user.setIsOnline(i <= 2); // 前两个在线
-
-            if (isOnline) {
-                // 线上：游戏技能
-                user.setSkills(Arrays.asList("王者荣耀-荣耀王者", "英雄联盟-钻石"));
-                user.setBio("擅长打野，带你上分！价格: " + (10 + i * 5) + "金币/小时");
-            } else {
-                // 线下：本地服务技能
-                user.setSkills(Arrays.asList("台球陪练", "桌游主持"));
-                user.setDistance((double) (i * 500)); // 距离: 500m, 1km, 1.5km...
-                user.setDistanceText(formatDistance(i * 500));
-                user.setCity("深圳");
-                user.setBio("专业台球教练，10年经验。价格: " + (50 + i * 20) + "金币/小时");
-            }
-
-            user.setFansCount(100 + i * 10);
-            user.setFeedCount(50 + i * 5);
-            user.setIsFollowed(false);
-
-            users.add(user);
+        // 性别转换: male/female -> 1/2
+        if ("male".equals(rpcUser.getGender())) {
+            user.setGender(1);
+        } else if ("female".equals(rpcUser.getGender())) {
+            user.setGender(2);
+        } else {
+            user.setGender(0);
         }
 
-        return users;
+        user.setAge(rpcUser.getAge() != null ? rpcUser.getAge() : 0);
+        user.setIsOnline(rpcUser.getIsOnline() != null ? rpcUser.getIsOnline() : false);
+        user.setBio(rpcUser.getBio());
+
+        // 技能信息
+        List<String> skills = new ArrayList<>();
+        if (rpcUser.getSkillName() != null) {
+            String skillDisplay = rpcUser.getSkillName();
+            if (rpcUser.getSkillLevel() != null) {
+                skillDisplay += "-" + rpcUser.getSkillLevel();
+            }
+            skills.add(skillDisplay);
+        }
+        user.setSkills(skills);
+
+        // 距离
+        if (rpcUser.getDistance() != null && rpcUser.getDistance() > 0) {
+            user.setDistance((double) rpcUser.getDistance());
+            user.setDistanceText(formatDistance(rpcUser.getDistance()));
+        }
+
+        // 城市 (从residence解析)
+        if (rpcUser.getResidence() != null) {
+            user.setCity(rpcUser.getResidence());
+        }
+
+        // 统计信息
+        user.setFansCount(rpcUser.getFansCount() != null ? rpcUser.getFansCount() : 0);
+        user.setFeedCount(rpcUser.getPostsCount() != null ? rpcUser.getPostsCount() : 0);
+        user.setIsFollowed(false); // 需要后续查询关注关系
+
+        return user;
     }
 
     /**

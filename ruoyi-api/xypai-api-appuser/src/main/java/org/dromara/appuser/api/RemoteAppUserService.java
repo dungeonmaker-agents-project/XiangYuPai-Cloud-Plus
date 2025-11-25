@@ -1,5 +1,8 @@
 package org.dromara.appuser.api;
 
+import org.dromara.appuser.api.domain.dto.FilterQueryDto;
+import org.dromara.appuser.api.domain.vo.FilterConfigVo;
+import org.dromara.appuser.api.domain.vo.FilterUserPageResult;
 import org.dromara.appuser.api.model.AppLoginUser;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.exception.user.UserException;
@@ -216,4 +219,38 @@ public interface RemoteAppUserService {
         Integer pageNum,
         Integer pageSize
     );
+
+    // ==================== 筛选功能相关 ====================
+
+    /**
+     * 获取筛选配置（从数据库聚合技能、段位等选项）
+     *
+     * <p>用途：供 xypai-app-bff 调用，获取筛选页面的配置选项</p>
+     * <p>数据来源：</p>
+     * <ul>
+     *     <li>线上技能：game_name, game_rank 聚合</li>
+     *     <li>线下技能：service_type 聚合</li>
+     *     <li>价格范围：min/max price 统计</li>
+     * </ul>
+     *
+     * @param type 类型: online-线上, offline-线下
+     * @return 筛选配置
+     */
+    FilterConfigVo getFilterConfig(String type);
+
+    /**
+     * 根据筛选条件查询用户列表
+     *
+     * <p>用途：供 xypai-app-bff 调用，根据筛选条件查询符合条件的用户</p>
+     * <p>特点：</p>
+     * <ul>
+     *     <li>支持多维度筛选：年龄、性别、状态、技能、价格、标签</li>
+     *     <li>自动计算距离（基于用户location）</li>
+     *     <li>JOIN users + skills + user_stats 三张表</li>
+     * </ul>
+     *
+     * @param queryDto 筛选查询条件
+     * @return 筛选用户分页结果
+     */
+    FilterUserPageResult queryFilteredUsers(FilterQueryDto queryDto);
 }
