@@ -23,6 +23,12 @@ import java.io.Serializable;
  *     <li>登出（Token失效）</li>
  * </ul>
  *
+ * <p>Gateway路由：</p>
+ * <ul>
+ *     <li>前端请求: /xypai-auth/api/auth/xxx</li>
+ *     <li>Gateway StripPrefix=1 后: /api/auth/xxx</li>
+ * </ul>
+ *
  * @author XyPai Team
  * @date 2025-11-14
  */
@@ -30,7 +36,7 @@ import java.io.Serializable;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @Tag(name = "App Token管理", description = "Token刷新和登出")
 public class AppTokenController {
 
@@ -41,7 +47,7 @@ public class AppTokenController {
      *
      * <p>请求示例：</p>
      * <pre>
-     * POST /auth/token/refresh
+     * POST /api/auth/token/refresh
      * {
      *   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
      * }
@@ -105,7 +111,7 @@ public class AppTokenController {
      *
      * <p>请求示例：</p>
      * <pre>
-     * POST /auth/logout
+     * POST /api/auth/logout
      * Headers: Authorization: Bearer <token>
      * </pre>
      *

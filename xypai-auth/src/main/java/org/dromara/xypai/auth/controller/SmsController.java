@@ -33,6 +33,12 @@ import java.util.Map;
  * - 验证短信验证码
  * - 防刷机制（频率限制、IP限制）
  *
+ * <p>Gateway路由：</p>
+ * <ul>
+ *     <li>前端请求: /xypai-auth/api/auth/sms/xxx</li>
+ *     <li>Gateway StripPrefix=1 后: /api/auth/sms/xxx</li>
+ * </ul>
+ *
  * @author XiangYuPai Team
  * @date 2025-11-11
  */
@@ -40,7 +46,7 @@ import java.util.Map;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/auth/sms")
+@RequestMapping("/api/auth/sms")
 public class SmsController {
 
     @DubboReference

@@ -253,4 +253,66 @@ public interface RemoteAppUserService {
      * @return 筛选用户分页结果
      */
     FilterUserPageResult queryFilteredUsers(FilterQueryDto queryDto);
+
+    // ==================== 技能服务相关 ====================
+
+    /**
+     * 查询技能服务列表
+     *
+     * <p>用途：供 xypai-app-bff 调用，获取指定技能类型的服务列表</p>
+     * <p>特点：</p>
+     * <ul>
+     *     <li>支持多维度筛选：性别、状态、游戏大区、段位、价格、标签</li>
+     *     <li>支持多种排序：智能排序、价格、评分、订单数</li>
+     *     <li>包含筛选配置和Tab统计</li>
+     * </ul>
+     *
+     * @param queryDto 查询条件
+     * @return 技能服务分页结果
+     */
+    org.dromara.appuser.api.domain.vo.SkillServicePageResult querySkillServiceList(
+        org.dromara.appuser.api.domain.dto.SkillServiceQueryDto queryDto
+    );
+
+    /**
+     * 获取技能服务详情
+     *
+     * <p>用途：供 xypai-app-bff 调用，获取技能服务的完整详情信息</p>
+     * <p>包含：</p>
+     * <ul>
+     *     <li>服务提供者信息</li>
+     *     <li>技能详细信息</li>
+     *     <li>价格和时间安排</li>
+     *     <li>评价摘要和最近评价</li>
+     * </ul>
+     *
+     * @param skillId 技能ID
+     * @param userId  当前用户ID (可选，用于个性化展示)
+     * @return 技能服务详情
+     */
+    org.dromara.appuser.api.domain.vo.SkillServiceDetailVo getSkillServiceDetail(Long skillId, Long userId);
+
+    /**
+     * 获取技能服务评价列表
+     *
+     * <p>用途：供 xypai-app-bff 调用，分页获取技能服务的评价列表</p>
+     * <p>特点：</p>
+     * <ul>
+     *     <li>支持按评价类型筛选 (all/excellent/positive/negative)</li>
+     *     <li>包含评价摘要和标签统计</li>
+     *     <li>支持分页查询</li>
+     * </ul>
+     *
+     * @param skillId  技能ID
+     * @param pageNum  页码 (从1开始)
+     * @param pageSize 每页数量
+     * @param filterBy 筛选类型 (all/excellent/positive/negative)
+     * @return 评价分页结果
+     */
+    org.dromara.appuser.api.domain.vo.SkillServiceReviewPageResult getSkillServiceReviews(
+        Long skillId,
+        Integer pageNum,
+        Integer pageSize,
+        String filterBy
+    );
 }

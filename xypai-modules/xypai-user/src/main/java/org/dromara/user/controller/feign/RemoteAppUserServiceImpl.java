@@ -9,11 +9,18 @@ import org.dromara.appuser.api.domain.vo.FilterUserPageResult;
 import org.dromara.appuser.api.domain.vo.FilterUserVo;
 import org.dromara.appuser.api.domain.vo.LimitedTimePageResult;
 import org.dromara.appuser.api.domain.vo.LimitedTimeUserVo;
+import org.dromara.appuser.api.domain.vo.SkillServiceDetailVo;
+import org.dromara.appuser.api.domain.vo.SkillServicePageResult;
+import org.dromara.appuser.api.domain.vo.SkillServiceReviewPageResult;
+import org.dromara.appuser.api.domain.vo.SkillServiceReviewVo;
+import org.dromara.appuser.api.domain.vo.SkillServiceVo;
+import org.dromara.appuser.api.domain.dto.SkillServiceQueryDto;
 import org.dromara.appuser.api.model.AppLoginUser;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.exception.user.UserException;
 import org.dromara.user.domain.entity.User;
 import org.dromara.user.mapper.UserMapper;
+import org.dromara.user.mapper.SkillMapper;
 import org.dromara.user.service.IUserService;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +47,7 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
 
     private final IUserService userService;
     private final UserMapper userMapper;
+    private final SkillMapper skillMapper;
 
     @Override
     public AppLoginUser getUserByMobile(String mobile, String countryCode) throws UserException {
@@ -344,6 +352,75 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
             .total(total)
             .list(users)
             .hasMore(hasMore)
+            .build();
+    }
+
+    // ==================== 技能服务相关 ====================
+
+    @Override
+    public SkillServicePageResult querySkillServiceList(SkillServiceQueryDto queryDto) {
+        // TODO: 实现技能服务列表查询
+        // 1. 从 skills 表查询技能列表
+        // 2. JOIN users 表获取用户信息
+        // 3. 应用筛选条件 (性别、状态、游戏大区、段位、价格等)
+        // 4. 应用排序 (智能排序、价格、评分、订单数)
+        // 5. 构建筛选配置和Tab统计
+        // 6. 返回分页结果
+
+        // 临时返回空结果，避免编译错误
+        return SkillServicePageResult.builder()
+            .skillType(SkillServicePageResult.SkillTypeInfo.builder()
+                .type(queryDto.getSkillType())
+                .label(queryDto.getSkillType())
+                .build())
+            .tabs(new ArrayList<>())
+            .filters(SkillServicePageResult.FilterConfig.builder().build())
+            .list(new ArrayList<>())
+            .total(0L)
+            .hasMore(false)
+            .build();
+    }
+
+    @Override
+    public SkillServiceDetailVo getSkillServiceDetail(Long skillId, Long userId) {
+        // TODO: 实现技能服务详情查询
+        // 1. 从 skills 表查询技能基本信息
+        // 2. JOIN users 表获取服务提供者信息
+        // 3. 查询技能图片 (skill_images 表)
+        // 4. 查询技能承诺 (skill_promises 表)
+        // 5. 查询可用时间 (skill_available_times 表)
+        // 6. 查询评价摘要和最近评价
+        // 7. 返回完整详情
+
+        // 临时返回null，避免编译错误
+        return null;
+    }
+
+    @Override
+    public SkillServiceReviewPageResult getSkillServiceReviews(Long skillId, Integer pageNum, Integer pageSize, String filterBy) {
+        // TODO: 实现技能服务评价列表查询
+        // 1. 从 reviews 表查询评价列表
+        // 2. 根据 filterBy 筛选 (all/excellent/positive/negative)
+        // 3. JOIN users 表获取评价者信息
+        // 4. 统计评价摘要 (优秀/好评/差评数量)
+        // 5. 统计评价标签
+        // 6. 返回分页结果
+
+        // 临时返回空结果，避免编译错误
+        return SkillServiceReviewPageResult.builder()
+            .skillId(skillId)
+            .summary(SkillServiceReviewPageResult.ReviewSummaryVo.builder()
+                .excellent(0)
+                .positive(0)
+                .negative(0)
+                .build())
+            .tags(new ArrayList<>())
+            .list(new ArrayList<>())
+            .total(0L)
+            .pageNum(pageNum)
+            .pageSize(pageSize)
+            .pages(0)
+            .hasNext(false)
             .build();
     }
 }

@@ -21,8 +21,14 @@ import org.springframework.web.bind.annotation.*;
  *
  * <p>支持的登录方式：</p>
  * <ul>
- *     <li>SMS登录（支持自动注册）：POST /auth/login/sms</li>
- *     <li>密码登录：POST /auth/login/password</li>
+ *     <li>SMS登录（支持自动注册）：POST /api/auth/login/sms</li>
+ *     <li>密码登录：POST /api/auth/login/password</li>
+ * </ul>
+ *
+ * <p>Gateway路由：</p>
+ * <ul>
+ *     <li>前端请求: /xypai-auth/api/auth/login/xxx</li>
+ *     <li>Gateway StripPrefix=1 后: /api/auth/login/xxx</li>
  * </ul>
  *
  * @author XyPai Team
@@ -32,7 +38,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/auth/login")
+@RequestMapping("/api/auth/login")
 @Tag(name = "App认证", description = "App用户登录（无租户）")
 public class AppAuthController {
 
@@ -41,14 +47,14 @@ public class AppAuthController {
      *
      * <p>流程：</p>
      * <ol>
-     *     <li>用户输入手机号 → 调用 /auth/sms/send 获取验证码</li>
+     *     <li>用户输入手机号 → 调用 /api/auth/sms/send 获取验证码</li>
      *     <li>用户输入6位验证码 → 调用此接口登录</li>
      *     <li>后端验证验证码 → 自动注册（如果未注册） → 返回token</li>
      * </ol>
      *
      * <p>请求示例：</p>
      * <pre>
-     * POST /auth/login/sms
+     * POST /api/auth/login/sms
      * {
      *   "countryCode": "+86",
      *   "mobile": "13800138000",
@@ -106,7 +112,7 @@ public class AppAuthController {
      *
      * <p>请求示例：</p>
      * <pre>
-     * POST /auth/login/password
+     * POST /api/auth/login/password
      * {
      *   "countryCode": "+86",
      *   "mobile": "13800138000",

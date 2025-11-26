@@ -23,10 +23,16 @@ import java.time.Duration;
  *
  * <p>完整流程：</p>
  * <ol>
- *     <li>用户输入手机号 → 调用 {@code POST /auth/sms/send} 发送验证码（复用SmsController）</li>
- *     <li>用户输入验证码 → 调用 {@code POST /auth/password/reset/verify} 验证验证码</li>
- *     <li>用户设置新密码 → 调用 {@code POST /auth/password/reset/confirm} 重置密码</li>
+ *     <li>用户输入手机号 → 调用 {@code POST /api/auth/sms/send} 发送验证码（复用SmsController）</li>
+ *     <li>用户输入验证码 → 调用 {@code POST /api/auth/password/reset/verify} 验证验证码</li>
+ *     <li>用户设置新密码 → 调用 {@code POST /api/auth/password/reset/confirm} 重置密码</li>
  * </ol>
+ *
+ * <p>Gateway路由：</p>
+ * <ul>
+ *     <li>前端请求: /xypai-auth/api/auth/password/xxx</li>
+ *     <li>Gateway StripPrefix=1 后: /api/auth/password/xxx</li>
+ * </ul>
  *
  * @author XyPai Team
  * @date 2025-11-13
@@ -35,7 +41,7 @@ import java.time.Duration;
 @Validated
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/auth/password")
+@RequestMapping("/api/auth/password")
 @Tag(name = "忘记密码", description = "App忘记密码流程（3步）")
 public class ForgotPasswordController {
 
@@ -54,7 +60,7 @@ public class ForgotPasswordController {
      * <p>⚠️ 注意：此步骤复用 {@link SmsController#sendCode(org.dromara.xypai.auth.controller.SmsController.SendSmsRequest)}</p>
      * <p>请求示例：</p>
      * <pre>
-     * POST /auth/sms/send
+     * POST /api/auth/sms/send
      * {
      *   "mobile": "13800138000",
      *   "countryCode": "+86",
@@ -66,7 +72,7 @@ public class ForgotPasswordController {
     /**
      * 步骤2：验证短信验证码
      *
-     * <p>接口：POST /auth/password/reset/verify</p>
+     * <p>接口：POST /api/auth/password/reset/verify</p>
      * <p>触发时机：用户输入完第6位验证码后自动触发</p>
      *
      * @param request 请求体
@@ -117,7 +123,7 @@ public class ForgotPasswordController {
     /**
      * 步骤3：设置新密码（重置密码）
      *
-     * <p>接口：POST /auth/password/reset/confirm</p>
+     * <p>接口：POST /api/auth/password/reset/confirm</p>
      * <p>触发时机：用户点击"确认"按钮</p>
      *
      * @param request 请求体

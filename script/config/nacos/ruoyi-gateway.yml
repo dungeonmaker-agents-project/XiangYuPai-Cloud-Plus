@@ -15,7 +15,13 @@ security:
       - /*/error
       - /csrf
       - /warm-flow-ui/**
-      # XYPai Auth 模块白名单
+      # XYPai Auth 模块白名单（正式接口 - 带/api前缀）
+      - /xypai-auth/api/auth/login/sms              # SMS验证码登录（自动注册）
+      - /xypai-auth/api/auth/login/password         # 密码登录
+      - /xypai-auth/api/auth/sms/send               # 发送验证码
+      - /xypai-auth/api/auth/password/reset/verify  # 验证重置密码验证码
+      - /xypai-auth/api/auth/password/reset/confirm # 重置密码
+      # XYPai Auth 模块白名单（旧接口 - 待清理，保留兼容）
       - /xypai-auth/auth/login/sms
       - /xypai-auth/auth/login/password
       - /xypai-auth/auth/sms/send
