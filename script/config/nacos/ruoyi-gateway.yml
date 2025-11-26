@@ -70,6 +70,12 @@ spring:
               lowerCaseServiceId: true
               enabled: true
           routes:
+            - id: xypai-app-bff
+              uri: lb://xypai-app-bff
+              predicates:
+                - Path=/xypai-app-bff/**
+              filters:
+                - StripPrefix=1
             # 认证中心
             - id: ruoyi-auth
               uri: lb://ruoyi-auth

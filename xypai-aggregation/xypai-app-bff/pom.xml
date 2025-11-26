@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.dromara</groupId>
@@ -13,66 +13,106 @@
     <artifactId>xypai-app-bff</artifactId>
 
     <description>
-        xypai-app-bff
+        xypai-app-bff 向娱拍App端BFF聚合层 - 聚合多个后端服务为前端提供统一API
     </description>
 
     <dependencies>
 
+        <!-- Nacos Service Discovery & Config -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-nacos</artifactId>
         </dependency>
 
+        <!-- RuoYi Common Log -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-log</artifactId>
         </dependency>
 
+        <!-- RuoYi Common Service Implementation -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-service-impl</artifactId>
+        </dependency>
+
+        <!-- API Documentation -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-doc</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-security</artifactId>
-        </dependency>
-
+        <!-- Common Web -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-web</artifactId>
         </dependency>
 
-        <!-- BFF 聚合层不需要数据库，移除 mybatis -->
-        <!--
-        <dependency>
-            <groupId>org.dromara</groupId>
-            <artifactId>ruoyi-common-mybatis</artifactId>
-        </dependency>
-        -->
-
+        <!-- Dubbo RPC -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-dubbo</artifactId>
         </dependency>
 
+        <!-- Seata Distributed Transaction -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-seata</artifactId>
+        </dependency>
+
+        <!-- Multi-Tenant -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-tenant</artifactId>
+        </dependency>
+
+        <!-- Common Security (includes Sa-Token) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-security</artifactId>
+        </dependency>
+
+        <!-- Redis Cache -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>ruoyi-common-redis</artifactId>
         </dependency>
 
-        <!-- RPC API 依赖 -->
+        <!-- Rate Limiter -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-ratelimiter</artifactId>
+        </dependency>
+
+        <!-- JSON Handling -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-json</artifactId>
+        </dependency>
+
+        <!-- Encrypt -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-encrypt</artifactId>
+        </dependency>
+
+        <!-- ====== XyPai API Dependencies (for Dubbo RPC) ====== -->
+
+        <!-- App User API (for RPC calls to xypai-user service) -->
         <dependency>
             <groupId>org.dromara</groupId>
             <artifactId>xypai-api-appuser</artifactId>
+            <version>${revision}</version>
         </dependency>
 
-        <!-- 测试消息总线使用 搭配 TestBusController -->
-<!--        <dependency>-->
-<!--            <groupId>org.dromara</groupId>-->
-<!--            <artifactId>ruoyi-api-workflow</artifactId>-->
-<!--        </dependency>-->
+        <!-- Content API (for RPC calls to xypai-content service) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-content</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -95,9 +135,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <mainClass>org.dromara.appbff.XyPaiAppBffApplication</mainClass>
-                </configuration>
             </plugin>
         </plugins>
     </build>
