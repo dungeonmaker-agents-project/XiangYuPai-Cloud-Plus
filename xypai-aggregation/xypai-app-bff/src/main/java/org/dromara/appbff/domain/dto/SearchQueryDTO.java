@@ -3,7 +3,6 @@ package org.dromara.appbff.domain.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.io.Serial;
@@ -26,17 +25,14 @@ public class SearchQueryDTO implements Serializable {
     @NotBlank(message = "搜索关键词不能为空")
     private String keyword;
 
-    @Schema(description = "搜索类型: all(全部), user(用户), order(下单), topic(话题)", example = "all", required = true)
-    @NotBlank(message = "搜索类型不能为空")
+    @Schema(description = "搜索类型: all(全部), user(用户), order(下单), topic(话题)", example = "all")
     private String type;
 
-    @Schema(description = "页码", example = "1", required = true)
-    @NotNull(message = "页码不能为空")
+    @Schema(description = "页码", example = "1", defaultValue = "1")
     @Min(value = 1, message = "页码最小为1")
     private Integer pageNum;
 
-    @Schema(description = "每页数量", example = "10", required = true)
-    @NotNull(message = "每页数量不能为空")
+    @Schema(description = "每页数量", example = "10", defaultValue = "10")
     @Min(value = 1, message = "每页数量最小为1")
     private Integer pageSize;
 

@@ -43,7 +43,7 @@ import java.util.Map;
  * - POST   /xypai-content/api/v1/interaction/share              分享动态
  *
  * 【xypai-auth (认证服务, 8200)】
- * - POST   /xypai-auth/auth/login/sms                        用户登录
+ * - POST   /xypai-auth/api/auth/login/sms                        用户登录
  *
  * ============================================================
  * 🧪 测试流程
@@ -126,7 +126,7 @@ public class Page03_FeedDetailTest {
         log.info("└─────────────────────────────────────────────────────────┘");
 
         try {
-            String url = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String url = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
 
             Map<String, String> request = new HashMap<>();
             request.put("countryCode", TEST_COUNTRY_CODE);
@@ -564,7 +564,7 @@ public class Page03_FeedDetailTest {
         log.info("└─────────────────────────────────────────────────────────┘");
 
         try {
-            String url = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String url = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
 
             Map<String, String> request = new HashMap<>();
             request.put("countryCode", TEST_COUNTRY_CODE);

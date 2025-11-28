@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.dromara.user.mapper.UserMapper">
+
+    <!-- 限时专享用户结果映射 -->
+    <resultMap type="org.dromara.appuser.api.domain.vo.LimitedTimeUserVo" id="LimitedTimeUserResult">
+        <id property="userId" column="userId"/>
+        <result property="nickname" column="nickname"/>
+        <result property="avatar" column="avatar"/>
+        <result property="gender" column="gender"/>
+        <result property="age" column="age"/>
+        <result property="isOnline" column="isOnline"/>
+        <result property="bio" column="bio"/>
+        <result property="distance" column="distance"/>
+        <result property="skillId" column="skillId"/>
+        <result property="skillName" column="skillName"/>
+        <result property="price" column="price"/>
+        <result property="priceUnit" column="priceUnit"/>
+        <result property="skillLevel" column="skillLevel"/>
+        <result property="rating" column="rating"/>
+        <result property="orderCount" column="orderCount"/>
+        <result property="fansCount" column="fansCount"/>
+        <result property="likesCount" column="likesCount"/>
+    </resultMap>
+
+    <!-- 筛选用户结果映射 -->
+    <resultMap type="org.dromara.appuser.api.domain.vo.FilterUserVo" id="FilterUserResult">
+        <id property="userId" column="userId"/>
+        <result property="nickname" column="nickname"/>
+        <result property="avatar" column="avatar"/>
+        <result property="gender" column="gender"/>
+        <result property="age" column="age"/>
+        <result property="isOnline" column="isOnline"/>
+        <result property="bio" column="bio"/>
+        <result property="residence" column="residence"/>
+        <result property="distance" column="distance"/>
+        <result property="skillId" column="skillId"/>
+        <result property="skillName" column="skillName"/>
+        <result property="skillType" column="skillType"/>
+        <result property="gameName" column="gameName"/>
+        <result property="price" column="price"/>
+        <result property="priceUnit" column="priceUnit"/>
+        <result property="skillLevel" column="skillLevel"/>
+        <result property="rating" column="rating"/>
+        <result property="orderCount" column="orderCount"/>
+        <result property="fansCount" column="fansCount"/>
+        <result property="likesCount" column="likesCount"/>
+        <result property="postsCount" column="postsCount"/>
+        <result property="lastActiveAt" column="lastActiveAt"/>
+    </resultMap>
+
+    <!-- 查询限时专享用户列表 -->
+    <select id="queryLimitedTimeUsers" resultMap="LimitedTimeUserResult">
+        SELECT
+            u.user_id AS userId,
+            u.nickname,
+            u.avatar,
+            u.gender,
+            YEAR(CURDATE()) - YEAR(u.birthday) AS age,
+            u.is_online AS isOnline,
+            u.bio,
+            <choose>
+                <when test="latitude != null and longitude != null">
+                    CAST(ST_Distance_Sphere(
+                        u.location,
+                        ST_GeomFromText(CONCAT('POINT(', #{longitude}, ' ', #{latitude}, ')'), 4326)
+                    ) AS SIGNED) AS distance,
+                </when>
+                <otherwise>
+                    0 AS distance,
+                </otherwise>
+            </choose>
+            MIN(s.skill_id) AS skillId,
+            MIN(s.skill_name) AS skillName,
+            MIN(s.price) AS price,
+            MIN(s.price_unit) AS priceUnit,
+            MIN(s.game_rank) AS skillLevel,
+            AVG(s.rating) AS rating,
+            SUM(s.order_count) AS orderCount,
+            MAX(us.fans_count) AS fansCount,
+            MAX(us.likes_count) AS likesCount
+        FROM users u
+        INNER JOIN skills s ON u.user_id = s.user_id
+            AND s.is_online = 1
+            AND s.deleted = 0
+        LEFT JOIN user_stats us ON u.user_id = us.user_id
+            AND us.deleted = 0
+        WHERE u.deleted = 0
+            <if test="gender != null and gender != 'all'">
+                AND u.gender = #{gender}
+            </if>
+            <if test="cityCode != null">
+                AND u.residence LIKE CONCAT('%', #{cityCode}, '%')
+            </if>
+            <if test="districtCode != null">
+                AND u.residence LIKE CONCAT('%', #{districtCode}, '%')
+            </if>
+        GROUP BY u.user_id, u.nickname, u.avatar, u.gender, u.birthday, u.is_online, u.bio, u.location
+        ORDER BY u.is_online DESC, u.user_id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计限时专享用户总数 -->
+    <select id="countLimitedTimeUsers" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT u.user_id)
+        FROM users u
+        INNER JOIN skills s ON u.user_id = s.user_id
+            AND s.is_online = 1
+            AND s.deleted = 0
+        WHERE u.deleted = 0
+            <if test="gender != null and gender != 'all'">
+                AND u.gender = #{gender}
+            </if>
+            <if test="cityCode != null">
+                AND u.residence LIKE CONCAT('%', #{cityCode}, '%')
+            </if>
+            <if test="districtCode != null">
+                AND u.residence LIKE CONCAT('%', #{districtCode}, '%')
+            </if>
+    </select>
+
+    <!-- 根据筛选条件查询用户列表 -->
+    <select id="queryFilteredUsers" resultMap="FilterUserResult">
+        SELECT
+            u.user_id AS userId,
+            u.nickname,
+            u.avatar,
+            u.gender,
+            TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) AS age,
+            u.is_online AS isOnline,
+            u.bio,
+            u.residence,
+            u.last_login_at AS lastActiveAt,
+            <choose>
+                <when test="latitude != null and longitude != null">
+                    CAST(ST_Distance_Sphere(
+                        u.location,
+                        ST_GeomFromText(CONCAT('POINT(', #{longitude}, ' ', #{latitude}, ')'), 4326)
+                    ) AS SIGNED) AS distance,
+                </when>
+                <otherwise>
+                    0 AS distance,
+                </otherwise>
+            </choose>
+            MIN(s.skill_id) AS skillId,
+            MIN(s.skill_name) AS skillName,
+            MIN(s.skill_type) AS skillType,
+            MIN(s.game_name) AS gameName,
+            MIN(s.price) AS price,
+            MIN(s.price_unit) AS priceUnit,
+            MIN(s.game_rank) AS skillLevel,
+            AVG(s.rating) AS rating,
+            SUM(s.order_count) AS orderCount,
+            MAX(us.fans_count) AS fansCount,
+            MAX(us.likes_count) AS likesCount,
+            MAX(us.posts_count) AS postsCount
+        FROM users u
+        INNER JOIN skills s ON u.user_id = s.user_id
+            AND s.is_online = 1
+            AND s.deleted = 0
+        LEFT JOIN user_stats us ON u.user_id = us.user_id
+            AND us.deleted = 0
+        WHERE u.deleted = 0
+            <!-- 技能类型筛选 -->
+            <if test="type == 'online'">
+                AND s.skill_type = 'online'
+            </if>
+            <if test="type == 'offline'">
+                AND s.skill_type = 'offline'
+            </if>
+            <!-- 性别筛选 -->
+            <if test="gender != null and gender != 'all'">
+                AND u.gender = #{gender}
+            </if>
+            <!-- 年龄筛选 -->
+            <if test="ageMin != null">
+                AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &gt;= #{ageMin}
+            </if>
+            <if test="ageMax != null">
+                AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &lt;= #{ageMax}
+            </if>
+            <!-- 状态筛选 -->
+            <if test="status == 'online'">
+                AND u.is_online = 1
+            </if>
+            <if test="status == 'active_3d'">
+                AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 3 DAY)
+            </if>
+            <if test="status == 'active_7d'">
+                AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </if>
+            <!-- 技能/段位筛选 -->
+            <if test="skills != null and skills.size() > 0">
+                AND (
+                    s.game_rank IN
+                    <foreach collection="skills" item="skill" open="(" separator="," close=")">
+                        #{skill}
+                    </foreach>
+                    OR s.service_type IN
+                    <foreach collection="skills" item="skill" open="(" separator="," close=")">
+                        #{skill}
+                    </foreach>
+                )
+            </if>
+            <!-- 价格范围筛选 -->
+            <if test="priceMin != null">
+                AND s.price &gt;= #{priceMin}
+            </if>
+            <if test="priceMax != null">
+                AND s.price &lt;= #{priceMax}
+            </if>
+        GROUP BY u.user_id, u.nickname, u.avatar, u.gender, u.birthday, u.is_online, u.bio, u.residence, u.last_login_at, u.location
+        ORDER BY u.is_online DESC, SUM(s.order_count) DESC, u.user_id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 统计筛选用户总数 -->
+    <select id="countFilteredUsers" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT u.user_id)
+        FROM users u
+        INNER JOIN skills s ON u.user_id = s.user_id
+            AND s.is_online = 1
+            AND s.deleted = 0
+        WHERE u.deleted = 0
+            <!-- 技能类型筛选 -->
+            <if test="type == 'online'">
+                AND s.skill_type = 'online'
+            </if>
+            <if test="type == 'offline'">
+                AND s.skill_type = 'offline'
+            </if>
+            <!-- 性别筛选 -->
+            <if test="gender != null and gender != 'all'">
+                AND u.gender = #{gender}
+            </if>
+            <!-- 年龄筛选 -->
+            <if test="ageMin != null">
+                AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &gt;= #{ageMin}
+            </if>
+            <if test="ageMax != null">
+                AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &lt;= #{ageMax}
+            </if>
+            <!-- 状态筛选 -->
+            <if test="status == 'online'">
+                AND u.is_online = 1
+            </if>
+            <if test="status == 'active_3d'">
+                AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 3 DAY)
+            </if>
+            <if test="status == 'active_7d'">
+                AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            </if>
+            <!-- 技能/段位筛选 -->
+            <if test="skills != null and skills.size() > 0">
+                AND (
+                    s.game_rank IN
+                    <foreach collection="skills" item="skill" open="(" separator="," close=")">
+                        #{skill}
+                    </foreach>
+                    OR s.service_type IN
+                    <foreach collection="skills" item="skill" open="(" separator="," close=")">
+                        #{skill}
+                    </foreach>
+                )
+            </if>
+            <!-- 价格范围筛选 -->
+            <if test="priceMin != null">
+                AND s.price &gt;= #{priceMin}
+            </if>
+            <if test="priceMax != null">
+                AND s.price &lt;= #{priceMax}
+            </if>
+    </select>
+
+    <!-- 查询技能选项 (按游戏名称/服务类型分组，统计用户数) -->
+    <select id="selectSkillOptions" resultType="java.util.Map">
+        SELECT
+            <choose>
+                <when test="type == 'online'">
+                    s.game_rank AS value,
+                    s.game_rank AS label,
+                    s.game_name AS category,
+                </when>
+                <otherwise>
+                    s.service_type AS value,
+                    s.service_type AS label,
+                    s.service_type AS category,
+                </otherwise>
+            </choose>
+            COUNT(DISTINCT s.user_id) AS count
+        FROM skills s
+        WHERE s.is_online = 1 AND s.deleted = 0
+            <if test="type == 'online'">
+                AND s.skill_type = 'online' AND s.game_rank IS NOT NULL
+            </if>
+            <if test="type == 'offline'">
+                AND s.skill_type = 'offline' AND s.service_type IS NOT NULL
+            </if>
+        GROUP BY
+            <if test="type == 'online'">s.game_name, s.game_rank</if>
+            <if test="type == 'offline'">s.service_type</if>
+        ORDER BY count DESC
+    </select>
+
+    <!-- 查询价格范围 -->
+    <select id="selectPriceRange" resultType="java.util.Map">
+        SELECT MIN(price) AS minPrice, MAX(price) AS maxPrice
+        FROM skills
+        WHERE is_online = 1 AND deleted = 0
+            <if test="type == 'online'">
+                AND skill_type = 'online'
+            </if>
+            <if test="type == 'offline'">
+                AND skill_type = 'offline'
+            </if>
+    </select>
+
+</mapper>

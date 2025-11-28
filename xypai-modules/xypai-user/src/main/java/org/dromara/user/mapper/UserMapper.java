@@ -11,6 +11,7 @@ import org.dromara.user.domain.entity.User;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 用户Mapper
@@ -98,56 +99,23 @@ public interface UserMapper extends BaseMapper<User> {
     @Update("UPDATE users SET last_login_at = NOW(), last_login_ip = #{loginIp}, updated_at = NOW() WHERE user_id = #{userId} AND deleted = 0")
     int updateLastLoginInfo(@Param("userId") Long userId, @Param("loginIp") String loginIp);
 
+    // ==================== 以下方法使用 XML Mapper 实现 (UserMapper.xml) ====================
+
     /**
      * 查询限时专享用户列表（带技能和价格信息）
-     *
+     * <p>
      * JOIN users + skills + user_stats
      * 只返回有上架技能的用户
+     *
+     * @param gender       性别筛选
+     * @param cityCode     城市代码
+     * @param districtCode 区域代码
+     * @param latitude     纬度（用于计算距离）
+     * @param longitude    经度（用于计算距离）
+     * @param offset       分页偏移
+     * @param pageSize     每页数量
+     * @return 限时专享用户列表
      */
-    @Select("<script>"
-        + "SELECT "
-        + "  u.user_id AS userId, "
-        + "  u.nickname, "
-        + "  u.avatar, "
-        + "  u.gender, "
-        + "  YEAR(CURDATE()) - YEAR(u.birthday) AS age, "
-        + "  u.is_online AS isOnline, "
-        + "  u.bio, "
-        + "  <if test='latitude != null and longitude != null'>"
-        + "  CAST(ST_Distance_Sphere("
-        + "    u.location, "
-        + "    ST_GeomFromText(CONCAT('POINT(', #{longitude}, ' ', #{latitude}, ')'), 4326)"
-        + "  ) AS SIGNED) AS distance, "
-        + "  </if>"
-        + "  <if test='latitude == null or longitude == null'>"
-        + "  0 AS distance, "
-        + "  </if>"
-        + "  s.skill_id AS skillId, "
-        + "  s.skill_name AS skillName, "
-        + "  s.price, "
-        + "  s.price_unit AS priceUnit, "
-        + "  s.game_rank AS skillLevel, "
-        + "  s.rating, "
-        + "  s.order_count AS orderCount, "
-        + "  us.fans_count AS fansCount, "
-        + "  us.likes_count AS likesCount "
-        + "FROM users u "
-        + "INNER JOIN skills s ON u.user_id = s.user_id AND s.is_online = 1 AND s.deleted = 0 "
-        + "LEFT JOIN user_stats us ON u.user_id = us.user_id AND us.deleted = 0 "
-        + "WHERE u.deleted = 0 "
-        + "<if test='gender != null and gender != \"all\"'>"
-        + "  AND u.gender = #{gender} "
-        + "</if>"
-        + "<if test='cityCode != null'>"
-        + "  AND u.residence LIKE CONCAT('%', #{cityCode}, '%') "
-        + "</if>"
-        + "<if test='districtCode != null'>"
-        + "  AND u.residence LIKE CONCAT('%', #{districtCode}, '%') "
-        + "</if>"
-        + "GROUP BY u.user_id "
-        + "ORDER BY u.is_online DESC, u.user_id DESC "
-        + "LIMIT #{offset}, #{pageSize}"
-        + "</script>")
     List<LimitedTimeUserVo> queryLimitedTimeUsers(
         @Param("gender") String gender,
         @Param("cityCode") String cityCode,
@@ -160,26 +128,74 @@ public interface UserMapper extends BaseMapper<User> {
 
     /**
      * 统计限时专享用户总数
+     *
+     * @param gender       性别筛选
+     * @param cityCode     城市代码
+     * @param districtCode 区域代码
+     * @return 用户总数
      */
-    @Select("<script>"
-        + "SELECT COUNT(DISTINCT u.user_id) "
-        + "FROM users u "
-        + "INNER JOIN skills s ON u.user_id = s.user_id AND s.is_online = 1 AND s.deleted = 0 "
-        + "WHERE u.deleted = 0 "
-        + "<if test='gender != null and gender != \"all\"'>"
-        + "  AND u.gender = #{gender} "
-        + "</if>"
-        + "<if test='cityCode != null'>"
-        + "  AND u.residence LIKE CONCAT('%', #{cityCode}, '%') "
-        + "</if>"
-        + "<if test='districtCode != null'>"
-        + "  AND u.residence LIKE CONCAT('%', #{districtCode}, '%') "
-        + "</if>"
-        + "</script>")
     Integer countLimitedTimeUsers(
         @Param("gender") String gender,
         @Param("cityCode") String cityCode,
         @Param("districtCode") String districtCode
+    );
+
+    /**
+     * 根据筛选条件查询用户列表
+     * <p>
+     * JOIN users + skills + user_stats
+     *
+     * @param type      技能类型: online/offline
+     * @param gender    性别筛选
+     * @param ageMin    最小年龄
+     * @param ageMax    最大年龄
+     * @param status    状态筛选: online/active_3d/active_7d
+     * @param skills    技能/段位筛选列表
+     * @param priceMin  最低价格
+     * @param priceMax  最高价格
+     * @param latitude  纬度（用于计算距离）
+     * @param longitude 经度（用于计算距离）
+     * @param offset    分页偏移
+     * @param pageSize  每页数量
+     * @return 筛选用户列表
+     */
+    List<FilterUserVo> queryFilteredUsers(
+        @Param("type") String type,
+        @Param("gender") String gender,
+        @Param("ageMin") Integer ageMin,
+        @Param("ageMax") Integer ageMax,
+        @Param("status") String status,
+        @Param("skills") List<String> skills,
+        @Param("priceMin") Integer priceMin,
+        @Param("priceMax") Integer priceMax,
+        @Param("latitude") Double latitude,
+        @Param("longitude") Double longitude,
+        @Param("offset") Integer offset,
+        @Param("pageSize") Integer pageSize
+    );
+
+    /**
+     * 统计筛选用户总数
+     *
+     * @param type     技能类型: online/offline
+     * @param gender   性别筛选
+     * @param ageMin   最小年龄
+     * @param ageMax   最大年龄
+     * @param status   状态筛选: online/active_3d/active_7d
+     * @param skills   技能/段位筛选列表
+     * @param priceMin 最低价格
+     * @param priceMax 最高价格
+     * @return 用户总数
+     */
+    Integer countFilteredUsers(
+        @Param("type") String type,
+        @Param("gender") String gender,
+        @Param("ageMin") Integer ageMin,
+        @Param("ageMax") Integer ageMax,
+        @Param("status") String status,
+        @Param("skills") List<String> skills,
+        @Param("priceMin") Integer priceMin,
+        @Param("priceMax") Integer priceMax
     );
 
     // ==================== 筛选功能相关 ====================
@@ -204,221 +220,17 @@ public interface UserMapper extends BaseMapper<User> {
 
     /**
      * 查询价格范围
+     *
+     * @param type 技能类型: online/offline
+     * @return 包含 minPrice 和 maxPrice 的 Map
      */
-    @Select("<script>"
-        + "SELECT MIN(price) AS minPrice, MAX(price) AS maxPrice "
-        + "FROM skills "
-        + "WHERE is_online = 1 AND deleted = 0 "
-        + "<if test='type == \"online\"'>"
-        + "  AND skill_type = 'online' "
-        + "</if>"
-        + "<if test='type == \"offline\"'>"
-        + "  AND skill_type = 'offline' "
-        + "</if>"
-        + "</script>")
-    java.util.Map<String, Object> selectPriceRange(@Param("type") String type);
+    Map<String, Object> selectPriceRange(@Param("type") String type);
 
     /**
      * 查询技能选项 (按游戏名称/服务类型分组，统计用户数)
+     *
+     * @param type 技能类型: online/offline
+     * @return 技能选项列表
      */
-    @Select("<script>"
-        + "SELECT "
-        + "  <if test='type == \"online\"'>"
-        + "    s.game_rank AS value, "
-        + "    s.game_rank AS label, "
-        + "    s.game_name AS category, "
-        + "  </if>"
-        + "  <if test='type == \"offline\"'>"
-        + "    s.service_type AS value, "
-        + "    s.service_type AS label, "
-        + "    s.service_type AS category, "
-        + "  </if>"
-        + "  COUNT(DISTINCT s.user_id) AS count "
-        + "FROM skills s "
-        + "WHERE s.is_online = 1 AND s.deleted = 0 "
-        + "<if test='type == \"online\"'>"
-        + "  AND s.skill_type = 'online' AND s.game_rank IS NOT NULL "
-        + "</if>"
-        + "<if test='type == \"offline\"'>"
-        + "  AND s.skill_type = 'offline' AND s.service_type IS NOT NULL "
-        + "</if>"
-        + "GROUP BY "
-        + "  <if test='type == \"online\"'>s.game_name, s.game_rank</if>"
-        + "  <if test='type == \"offline\"'>s.service_type</if>"
-        + " ORDER BY count DESC"
-        + "</script>")
-    List<java.util.Map<String, Object>> selectSkillOptions(@Param("type") String type);
-
-    /**
-     * 根据筛选条件查询用户列表
-     * JOIN users + skills + user_stats
-     */
-    @Select("<script>"
-        + "SELECT "
-        + "  u.user_id AS userId, "
-        + "  u.nickname, "
-        + "  u.avatar, "
-        + "  u.gender, "
-        + "  TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) AS age, "
-        + "  u.is_online AS isOnline, "
-        + "  u.bio, "
-        + "  u.residence, "
-        + "  u.last_login_at AS lastActiveAt, "
-        + "  <if test='latitude != null and longitude != null'>"
-        + "  CAST(ST_Distance_Sphere("
-        + "    u.location, "
-        + "    ST_GeomFromText(CONCAT('POINT(', #{longitude}, ' ', #{latitude}, ')'), 4326)"
-        + "  ) AS SIGNED) AS distance, "
-        + "  </if>"
-        + "  <if test='latitude == null or longitude == null'>"
-        + "  0 AS distance, "
-        + "  </if>"
-        + "  s.skill_id AS skillId, "
-        + "  s.skill_name AS skillName, "
-        + "  s.skill_type AS skillType, "
-        + "  s.game_name AS gameName, "
-        + "  s.price, "
-        + "  s.price_unit AS priceUnit, "
-        + "  s.game_rank AS skillLevel, "
-        + "  s.rating, "
-        + "  s.order_count AS orderCount, "
-        + "  us.fans_count AS fansCount, "
-        + "  us.likes_count AS likesCount, "
-        + "  us.posts_count AS postsCount "
-        + "FROM users u "
-        + "INNER JOIN skills s ON u.user_id = s.user_id AND s.is_online = 1 AND s.deleted = 0 "
-        + "LEFT JOIN user_stats us ON u.user_id = us.user_id AND us.deleted = 0 "
-        + "WHERE u.deleted = 0 "
-        // 技能类型筛选
-        + "<if test='type == \"online\"'>"
-        + "  AND s.skill_type = 'online' "
-        + "</if>"
-        + "<if test='type == \"offline\"'>"
-        + "  AND s.skill_type = 'offline' "
-        + "</if>"
-        // 性别筛选
-        + "<if test='gender != null and gender != \"all\"'>"
-        + "  AND u.gender = #{gender} "
-        + "</if>"
-        // 年龄筛选
-        + "<if test='ageMin != null'>"
-        + "  AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &gt;= #{ageMin} "
-        + "</if>"
-        + "<if test='ageMax != null'>"
-        + "  AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &lt;= #{ageMax} "
-        + "</if>"
-        // 状态筛选
-        + "<if test='status == \"online\"'>"
-        + "  AND u.is_online = 1 "
-        + "</if>"
-        + "<if test='status == \"active_3d\"'>"
-        + "  AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 3 DAY) "
-        + "</if>"
-        + "<if test='status == \"active_7d\"'>"
-        + "  AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 7 DAY) "
-        + "</if>"
-        // 技能/段位筛选 (线上)
-        + "<if test='skills != null and skills.size() > 0'>"
-        + "  AND (s.game_rank IN "
-        + "    <foreach collection='skills' item='skill' open='(' separator=',' close=')'>"
-        + "      #{skill}"
-        + "    </foreach>"
-        + "    OR s.service_type IN "
-        + "    <foreach collection='skills' item='skill' open='(' separator=',' close=')'>"
-        + "      #{skill}"
-        + "    </foreach>"
-        + "  ) "
-        + "</if>"
-        // 价格范围筛选
-        + "<if test='priceMin != null'>"
-        + "  AND s.price &gt;= #{priceMin} "
-        + "</if>"
-        + "<if test='priceMax != null'>"
-        + "  AND s.price &lt;= #{priceMax} "
-        + "</if>"
-        + "GROUP BY u.user_id "
-        + "ORDER BY u.is_online DESC, s.order_count DESC, u.user_id DESC "
-        + "LIMIT #{offset}, #{pageSize}"
-        + "</script>")
-    List<FilterUserVo> queryFilteredUsers(
-        @Param("type") String type,
-        @Param("gender") String gender,
-        @Param("ageMin") Integer ageMin,
-        @Param("ageMax") Integer ageMax,
-        @Param("status") String status,
-        @Param("skills") List<String> skills,
-        @Param("priceMin") Integer priceMin,
-        @Param("priceMax") Integer priceMax,
-        @Param("latitude") Double latitude,
-        @Param("longitude") Double longitude,
-        @Param("offset") Integer offset,
-        @Param("pageSize") Integer pageSize
-    );
-
-    /**
-     * 统计筛选用户总数
-     */
-    @Select("<script>"
-        + "SELECT COUNT(DISTINCT u.user_id) "
-        + "FROM users u "
-        + "INNER JOIN skills s ON u.user_id = s.user_id AND s.is_online = 1 AND s.deleted = 0 "
-        + "WHERE u.deleted = 0 "
-        // 技能类型筛选
-        + "<if test='type == \"online\"'>"
-        + "  AND s.skill_type = 'online' "
-        + "</if>"
-        + "<if test='type == \"offline\"'>"
-        + "  AND s.skill_type = 'offline' "
-        + "</if>"
-        // 性别筛选
-        + "<if test='gender != null and gender != \"all\"'>"
-        + "  AND u.gender = #{gender} "
-        + "</if>"
-        // 年龄筛选
-        + "<if test='ageMin != null'>"
-        + "  AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &gt;= #{ageMin} "
-        + "</if>"
-        + "<if test='ageMax != null'>"
-        + "  AND TIMESTAMPDIFF(YEAR, u.birthday, CURDATE()) &lt;= #{ageMax} "
-        + "</if>"
-        // 状态筛选
-        + "<if test='status == \"online\"'>"
-        + "  AND u.is_online = 1 "
-        + "</if>"
-        + "<if test='status == \"active_3d\"'>"
-        + "  AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 3 DAY) "
-        + "</if>"
-        + "<if test='status == \"active_7d\"'>"
-        + "  AND u.last_login_at &gt;= DATE_SUB(NOW(), INTERVAL 7 DAY) "
-        + "</if>"
-        // 技能/段位筛选
-        + "<if test='skills != null and skills.size() > 0'>"
-        + "  AND (s.game_rank IN "
-        + "    <foreach collection='skills' item='skill' open='(' separator=',' close=')'>"
-        + "      #{skill}"
-        + "    </foreach>"
-        + "    OR s.service_type IN "
-        + "    <foreach collection='skills' item='skill' open='(' separator=',' close=')'>"
-        + "      #{skill}"
-        + "    </foreach>"
-        + "  ) "
-        + "</if>"
-        // 价格范围筛选
-        + "<if test='priceMin != null'>"
-        + "  AND s.price &gt;= #{priceMin} "
-        + "</if>"
-        + "<if test='priceMax != null'>"
-        + "  AND s.price &lt;= #{priceMax} "
-        + "</if>"
-        + "</script>")
-    Integer countFilteredUsers(
-        @Param("type") String type,
-        @Param("gender") String gender,
-        @Param("ageMin") Integer ageMin,
-        @Param("ageMax") Integer ageMax,
-        @Param("status") String status,
-        @Param("skills") List<String> skills,
-        @Param("priceMin") Integer priceMin,
-        @Param("priceMax") Integer priceMax
-    );
+    List<Map<String, Object>> selectSkillOptions(@Param("type") String type);
 }

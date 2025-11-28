@@ -120,6 +120,13 @@
             <artifactId>ruoyi-common-json</artifactId>
         </dependency>
 
+        <!-- Content API (for Dubbo RPC interface) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-content</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!-- Elasticsearch (for search functionality) -->
         <dependency>
             <groupId>org.dromara</groupId>

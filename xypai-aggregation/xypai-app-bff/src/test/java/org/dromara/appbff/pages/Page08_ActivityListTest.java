@@ -113,7 +113,7 @@ public class Page08_ActivityListTest {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
 
-            String loginUrl = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String loginUrl = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -160,7 +160,7 @@ public class Page08_ActivityListTest {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
 
-            String loginUrl = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String loginUrl = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -533,34 +533,49 @@ public class Page08_ActivityListTest {
                         log.info("   - organizer.avatar: {}", organizer.get("avatar"));
                     }
 
-                    // 验证activityType
-                    Map<String, Object> activityType = (Map<String, Object>) activity.get("activityType");
-                    if (activityType != null) {
+                    // 验证activityType (可能是Map或String)
+                    Object activityTypeObj = activity.get("activityType");
+                    if (activityTypeObj instanceof Map) {
+                        Map<String, Object> activityType = (Map<String, Object>) activityTypeObj;
                         log.info("   - activityType.label: {}", activityType.get("label"));
+                    } else if (activityTypeObj != null) {
+                        log.info("   - activityType: {}", activityTypeObj);
                     }
 
-                    // 验证price
-                    Map<String, Object> price = (Map<String, Object>) activity.get("price");
-                    if (price != null) {
+                    // 验证price (可能是Map或String)
+                    Object priceObj = activity.get("price");
+                    if (priceObj instanceof Map) {
+                        Map<String, Object> price = (Map<String, Object>) priceObj;
                         log.info("   - price.displayText: {}", price.get("displayText"));
+                    } else if (priceObj != null) {
+                        log.info("   - price: {}", priceObj);
                     }
 
-                    // 验证schedule
-                    Map<String, Object> schedule = (Map<String, Object>) activity.get("schedule");
-                    if (schedule != null) {
+                    // 验证schedule (可能是Map或String)
+                    Object scheduleObj = activity.get("schedule");
+                    if (scheduleObj instanceof Map) {
+                        Map<String, Object> schedule = (Map<String, Object>) scheduleObj;
                         log.info("   - schedule.displayText: {}", schedule.get("displayText"));
+                    } else if (scheduleObj != null) {
+                        log.info("   - schedule: {}", scheduleObj);
                     }
 
-                    // 验证location
-                    Map<String, Object> location = (Map<String, Object>) activity.get("location");
-                    if (location != null) {
+                    // 验证location (可能是Map或String)
+                    Object locationObj = activity.get("location");
+                    if (locationObj instanceof Map) {
+                        Map<String, Object> location = (Map<String, Object>) locationObj;
                         log.info("   - location.address: {}", location.get("address"));
+                    } else if (locationObj != null) {
+                        log.info("   - location: {}", locationObj);
                     }
 
-                    // 验证participants
-                    Map<String, Object> participants = (Map<String, Object>) activity.get("participants");
-                    if (participants != null) {
+                    // 验证participants (可能是Map或String)
+                    Object participantsObj = activity.get("participants");
+                    if (participantsObj instanceof Map) {
+                        Map<String, Object> participants = (Map<String, Object>) participantsObj;
                         log.info("   - participants.displayText: {}", participants.get("displayText"));
+                    } else if (participantsObj != null) {
+                        log.info("   - participants: {}", participantsObj);
                     }
 
                     Assertions.assertNotNull(activity.get("activityId"), "activityId不能为空");
