@@ -9,6 +9,7 @@ import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.redis.utils.RedisUtils;
 import org.dromara.content.domain.dto.FeedListQueryDTO;
 import org.dromara.content.domain.dto.FeedPublishDTO;
+import org.dromara.content.domain.dto.UserFeedQueryDTO;
 import org.dromara.content.domain.entity.*;
 import org.dromara.content.domain.vo.FeedDetailVO;
 import org.dromara.content.domain.vo.FeedListVO;
@@ -50,6 +51,7 @@ public class FeedServiceImpl implements IFeedService {
 
         LambdaQueryWrapper<Feed> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Feed::getStatus, 0); // 正常状态
+        wrapper.eq(Feed::getDeleted, 0); // 未删除
 
         // 2. 根据tabType查询不同数据
         if ("follow".equals(queryDTO.getTabType())) {
@@ -605,6 +607,42 @@ public class FeedServiceImpl implements IFeedService {
                .eq(ContentCollection::getTargetType, "feed")
                .eq(ContentCollection::getTargetId, feedId);
         return collectionMapper.selectCount(wrapper) > 0;
+    }
+
+    @Override
+    public Page<FeedListVO> getUserFeedList(Long targetUserId, UserFeedQueryDTO queryDTO, Long currentUserId) {
+        // 1. 构建查询条件
+        Page<Feed> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+
+        LambdaQueryWrapper<Feed> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Feed::getUserId, targetUserId);
+        wrapper.eq(Feed::getStatus, 0); // 正常状态
+        wrapper.eq(Feed::getDeleted, 0); // 未删除
+
+        // 2. 可见性控制
+        if (currentUserId == null || !currentUserId.equals(targetUserId)) {
+            // 非本人查看，只能看公开的动态
+            wrapper.eq(Feed::getVisibility, 0);
+        }
+        // 本人查看可以看到所有自己的动态(包括仅自己可见的)
+
+        // 3. 按时间倒序
+        wrapper.orderByDesc(Feed::getCreatedTimestamp);
+
+        // 4. 执行查询
+        Page<Feed> feedPage = feedMapper.selectPage(page, wrapper);
+
+        // 5. 转换为VO
+        List<FeedListVO> voList = feedPage.getRecords().stream()
+            .map(feed -> convertToListVO(feed, currentUserId))
+            .collect(Collectors.toList());
+
+        // 6. 构建返回结果
+        Page<FeedListVO> resultPage = new Page<>(feedPage.getCurrent(), feedPage.getSize());
+        resultPage.setRecords(voList);
+        resultPage.setTotal(feedPage.getTotal());
+
+        return resultPage;
     }
 
 }

@@ -91,7 +91,7 @@ public class AppEditProfilePageTest {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
 
-            String loginUrl = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String loginUrl = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -136,7 +136,7 @@ public class AppEditProfilePageTest {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
 
-            String loginUrl = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String loginUrl = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {

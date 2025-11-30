@@ -1,5 +1,6 @@
 package org.dromara.content.controller;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,6 +15,7 @@ import org.dromara.common.core.domain.R;
 import org.dromara.common.ratelimiter.annotation.RateLimiter;
 import org.dromara.common.ratelimiter.enums.LimitType;
 import org.dromara.common.web.core.BaseController;
+import org.dromara.content.domain.vo.FeedListVO;
 import org.dromara.content.domain.vo.TopicListVO;
 import org.dromara.content.service.ITopicService;
 import org.springframework.validation.annotation.Validated;
@@ -68,6 +70,26 @@ public class TopicController extends BaseController {
         @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页数量最小为1") @Max(value = 100, message = "每页数量最大为100") Integer pageSize
     ) {
         Page<TopicListVO> result = topicService.searchTopics(keyword, page, pageSize);
+        return R.ok(result);
+    }
+
+    /**
+     * 获取话题下的动态列表
+     */
+    @Operation(summary = "获取话题下的动态列表", description = "获取指定话题关联的所有动态")
+    @GetMapping("/{topicId}/feeds")
+    @RateLimiter(count = 100, time = 60, limitType = LimitType.IP)
+    public R<Page<FeedListVO>> getTopicFeeds(
+        @Parameter(description = "话题ID", required = true) @PathVariable Long topicId,
+
+        @Parameter(description = "页码,从1开始", example = "1")
+        @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码最小为1") Integer page,
+
+        @Parameter(description = "每页数量,最大100", example = "20")
+        @RequestParam(defaultValue = "20") @Min(value = 1, message = "每页数量最小为1") @Max(value = 100, message = "每页数量最大为100") Integer pageSize
+    ) {
+        Long userId = StpUtil.isLogin() ? StpUtil.getLoginIdAsLong() : null;
+        Page<FeedListVO> result = topicService.getTopicFeeds(topicId, page, pageSize, userId);
         return R.ok(result);
     }
 

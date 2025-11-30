@@ -14,6 +14,7 @@ import org.dromara.common.ratelimiter.enums.LimitType;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.content.domain.dto.FeedListQueryDTO;
 import org.dromara.content.domain.dto.FeedPublishDTO;
+import org.dromara.content.domain.dto.UserFeedQueryDTO;
 import org.dromara.content.domain.vo.FeedDetailVO;
 import org.dromara.content.domain.vo.FeedListVO;
 import org.dromara.content.service.IFeedService;
@@ -92,6 +93,22 @@ public class FeedController extends BaseController {
         Long userId = StpUtil.getLoginIdAsLong();
         feedService.deleteFeed(feedId, userId);
         return R.ok("删除成功");
+    }
+
+    /**
+     * 获取用户动态列表
+     */
+    @Operation(summary = "获取用户动态列表", description = "获取指定用户发布的动态列表")
+    @GetMapping("/feed/user/{userId}")
+    @RateLimiter(count = 100, time = 60, limitType = LimitType.IP)
+    public R<Page<FeedListVO>> getUserFeedList(
+        @Parameter(description = "目标用户ID", required = true) @PathVariable Long userId,
+        @Valid UserFeedQueryDTO queryDTO
+    ) {
+        // 获取当前用户ID(如果已登录)
+        Long currentUserId = StpUtil.isLogin() ? StpUtil.getLoginIdAsLong() : null;
+        Page<FeedListVO> page = feedService.getUserFeedList(userId, queryDTO, currentUserId);
+        return R.ok(page);
     }
 
 }

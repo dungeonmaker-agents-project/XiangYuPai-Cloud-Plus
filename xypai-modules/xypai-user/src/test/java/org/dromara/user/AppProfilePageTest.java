@@ -87,7 +87,7 @@ public class AppProfilePageTest {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
 
-            String loginUrl = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String loginUrl = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -139,7 +139,7 @@ public class AppProfilePageTest {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
 
-            String loginUrl = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String loginUrl = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             // 验证响应
@@ -212,6 +212,24 @@ public class AppProfilePageTest {
                         Map<String, Object> stats = (Map<String, Object>) data.get("stats");
                         log.info("   统计数据 - 关注: {}, 粉丝: {}, 获赞: {}",
                             stats.get("followingCount"), stats.get("fansCount"), stats.get("likesCount"));
+
+                        // 🆕 验证前端兼容字段别名
+                        log.info("   前端兼容字段 - followerCount: {}, contentCount: {}, totalLikeCount: {}",
+                            stats.get("followerCount"), stats.get("contentCount"), stats.get("totalLikeCount"));
+
+                        // 验证别名字段值与原字段值一致
+                        if (stats.get("followerCount") != null && stats.get("fansCount") != null) {
+                            assert stats.get("followerCount").equals(stats.get("fansCount")) :
+                                "followerCount 应该等于 fansCount";
+                        }
+                        if (stats.get("contentCount") != null && stats.get("postsCount") != null) {
+                            assert stats.get("contentCount").equals(stats.get("postsCount")) :
+                                "contentCount 应该等于 postsCount";
+                        }
+                        if (stats.get("totalLikeCount") != null && stats.get("likesCount") != null) {
+                            assert stats.get("totalLikeCount").equals(stats.get("likesCount")) :
+                                "totalLikeCount 应该等于 likesCount";
+                        }
                     }
                 } else {
                     String msg = (String) responseBody.get("msg");

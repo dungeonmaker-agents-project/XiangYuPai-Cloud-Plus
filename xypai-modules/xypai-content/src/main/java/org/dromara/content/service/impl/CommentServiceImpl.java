@@ -237,4 +237,41 @@ public class CommentServiceImpl implements ICommentService {
         return vo;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean pinComment(Long commentId, Boolean pin, Long userId) {
+        // 1. 查询评论
+        Comment comment = commentMapper.selectById(commentId);
+        if (comment == null || comment.getDeleted() == 1) {
+            throw new ServiceException("评论不存在");
+        }
+
+        // 2. 查询动态,验证是否是动态作者
+        Feed feed = feedMapper.selectById(comment.getFeedId());
+        if (feed == null || feed.getDeleted() == 1) {
+            throw new ServiceException("动态不存在");
+        }
+
+        if (!feed.getUserId().equals(userId)) {
+            log.warn("用户 {} 尝试置顶动态 {} 的评论 {}, 但不是动态作者", userId, feed.getId(), commentId);
+            return false;
+        }
+
+        // 3. 只有一级评论可以置顶
+        if (comment.getParentId() != null) {
+            throw new ServiceException("只有一级评论可以置顶");
+        }
+
+        // 4. 更新置顶状态
+        comment.setIsTop(pin ? 1 : 0);
+        commentMapper.updateById(comment);
+
+        // 5. 清除缓存
+        RedisUtils.deleteObject(CACHE_KEY_COMMENT_LIST + comment.getFeedId());
+
+        log.info("用户 {} {}评论: {}", userId, pin ? "置顶" : "取消置顶", commentId);
+
+        return true;
+    }
+
 }

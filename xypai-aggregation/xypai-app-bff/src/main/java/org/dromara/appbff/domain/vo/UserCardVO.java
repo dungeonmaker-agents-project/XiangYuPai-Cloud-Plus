@@ -10,6 +10,7 @@ import java.util.List;
  *
  * @author XyPai Team
  * @date 2025-11-20
+ * @updated 2025-11-29 添加用户动态字段
  */
 @Data
 public class UserCardVO implements Serializable {
@@ -85,5 +86,59 @@ public class UserCardVO implements Serializable {
      * 个人简介
      */
     private String bio;
+
+    /**
+     * 评分 (0-5.0)
+     */
+    private Double rating;
+
+    /**
+     * 订单数量
+     */
+    private Integer orderCount;
+
+    /**
+     * 最后登录时间 (时间戳)
+     */
+    private Long lastLoginTime;
+
+    /**
+     * 用户最新动态列表 (最多3条)
+     * <p>用于卡片下方展示动态预览</p>
+     */
+    private List<FeedPreviewVO> feeds;
+
+    /**
+     * 动态预览VO (内部类)
+     */
+    @Data
+    public static class FeedPreviewVO implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * 动态ID
+         */
+        private Long feedId;
+
+        /**
+         * 封面图URL
+         */
+        private String coverImage;
+
+        /**
+         * 动态内容 (截取前50字符)
+         */
+        private String content;
+
+        /**
+         * 点赞数
+         */
+        private Integer likeCount;
+
+        /**
+         * 评论数
+         */
+        private Integer commentCount;
+    }
 
 }

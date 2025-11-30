@@ -3,7 +3,6 @@ package org.dromara.content.domain.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.io.Serial;
@@ -23,16 +22,17 @@ public class FeedListQueryDTO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Schema(description = "Tab类型: follow=关注, hot=热门, local=同城", example = "hot")
-    @NotNull(message = "Tab类型不能为空")
     private String tabType;
 
-    @Schema(description = "页码", example = "1")
-    @NotNull(message = "页码不能为空")
+    @Schema(description = "页码(兼容page和pageNum两种参数名)", example = "1")
     @Min(value = 1, message = "页码最小为1")
     private Integer pageNum;
 
+    @Schema(description = "页码(前端使用page参数名)", example = "1")
+    @Min(value = 1, message = "页码最小为1")
+    private Integer page;
+
     @Schema(description = "每页数量", example = "20")
-    @NotNull(message = "每页数量不能为空")
     @Min(value = 1, message = "每页数量最小为1")
     @Max(value = 100, message = "每页数量最大为100")
     private Integer pageSize;
@@ -45,5 +45,25 @@ public class FeedListQueryDTO implements Serializable {
 
     @Schema(description = "搜索半径(km,默认5)", example = "5")
     private Integer radius;
+
+    /**
+     * 获取实际页码 (兼容 page 和 pageNum 两种参数名)
+     */
+    public Integer getPageNum() {
+        if (pageNum != null) {
+            return pageNum;
+        }
+        if (page != null) {
+            return page;
+        }
+        return 1; // 默认第一页
+    }
+
+    /**
+     * 获取每页数量 (提供默认值)
+     */
+    public Integer getPageSize() {
+        return pageSize != null ? pageSize : 10; // 默认每页10条
+    }
 
 }

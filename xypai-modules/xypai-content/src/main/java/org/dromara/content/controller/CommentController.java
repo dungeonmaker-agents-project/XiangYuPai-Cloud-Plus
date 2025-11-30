@@ -78,4 +78,23 @@ public class CommentController extends BaseController {
         return R.ok("删除成功");
     }
 
+    /**
+     * 置顶/取消置顶评论
+     */
+    @Operation(summary = "置顶/取消置顶评论", description = "动态作者可以置顶或取消置顶评论")
+    @PutMapping("/comment/{commentId}/pin")
+    @RateLimiter(count = 20, time = 60, limitType = LimitType.USER)
+    public R<Void> pinComment(
+        @Parameter(description = "评论ID", required = true) @PathVariable Long commentId,
+        @Parameter(description = "是否置顶") @RequestParam(defaultValue = "true") Boolean pin
+    ) {
+        StpUtil.checkLogin();
+        Long userId = StpUtil.getLoginIdAsLong();
+        boolean success = commentService.pinComment(commentId, pin, userId);
+        if (success) {
+            return R.ok(pin ? "置顶成功" : "取消置顶成功");
+        }
+        return R.fail("操作失败，仅动态作者可操作");
+    }
+
 }

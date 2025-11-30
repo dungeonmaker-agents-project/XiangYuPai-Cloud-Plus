@@ -1,6 +1,7 @@
 package org.dromara.content.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,7 +13,11 @@ import org.dromara.common.ratelimiter.annotation.RateLimiter;
 import org.dromara.common.ratelimiter.enums.LimitType;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.content.domain.dto.InteractionDTO;
+import org.dromara.content.domain.dto.MyCollectionQueryDTO;
+import org.dromara.content.domain.dto.MyLikeQueryDTO;
 import org.dromara.content.domain.vo.InteractionResultVO;
+import org.dromara.content.domain.vo.MyCollectionVO;
+import org.dromara.content.domain.vo.MyLikeVO;
 import org.dromara.content.service.IInteractionService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -69,6 +74,32 @@ public class InteractionController extends BaseController {
         Long userId = StpUtil.getLoginIdAsLong();
         InteractionResultVO result = interactionService.handleShare(interactionDTO.getTargetId(), interactionDTO.getShareChannel(), userId);
         return R.ok("分享成功", result);
+    }
+
+    /**
+     * 我的点赞列表
+     */
+    @Operation(summary = "我的点赞列表", description = "获取当前用户的点赞记录")
+    @GetMapping("/like/my")
+    @RateLimiter(count = 50, time = 60, limitType = LimitType.USER)
+    public R<Page<MyLikeVO>> getMyLikeList(@Valid MyLikeQueryDTO queryDTO) {
+        StpUtil.checkLogin();
+        Long userId = StpUtil.getLoginIdAsLong();
+        Page<MyLikeVO> page = interactionService.getMyLikeList(queryDTO, userId);
+        return R.ok(page);
+    }
+
+    /**
+     * 我的收藏列表
+     */
+    @Operation(summary = "我的收藏列表", description = "获取当前用户的收藏记录")
+    @GetMapping("/collect/my")
+    @RateLimiter(count = 50, time = 60, limitType = LimitType.USER)
+    public R<Page<MyCollectionVO>> getMyCollectionList(@Valid MyCollectionQueryDTO queryDTO) {
+        StpUtil.checkLogin();
+        Long userId = StpUtil.getLoginIdAsLong();
+        Page<MyCollectionVO> page = interactionService.getMyCollectionList(queryDTO, userId);
+        return R.ok(page);
     }
 
 }

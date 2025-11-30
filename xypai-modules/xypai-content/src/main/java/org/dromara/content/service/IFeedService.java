@@ -3,6 +3,7 @@ package org.dromara.content.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.dromara.content.domain.dto.FeedListQueryDTO;
 import org.dromara.content.domain.dto.FeedPublishDTO;
+import org.dromara.content.domain.dto.UserFeedQueryDTO;
 import org.dromara.content.domain.vo.FeedDetailVO;
 import org.dromara.content.domain.vo.FeedListVO;
 
@@ -47,5 +48,15 @@ public interface IFeedService {
      * @param userId 用户ID
      */
     void deleteFeed(Long feedId, Long userId);
+
+    /**
+     * 获取用户动态列表
+     *
+     * @param targetUserId 目标用户ID
+     * @param queryDTO 查询参数
+     * @param currentUserId 当前用户ID(可为null)
+     * @return 动态列表
+     */
+    Page<FeedListVO> getUserFeedList(Long targetUserId, UserFeedQueryDTO queryDTO, Long currentUserId);
 
 }

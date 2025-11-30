@@ -24,6 +24,9 @@ public class TopicListVO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
+    @Schema(description = "话题ID")
+    private Long id;
+
     @Schema(description = "话题名称")
     private String name;
 

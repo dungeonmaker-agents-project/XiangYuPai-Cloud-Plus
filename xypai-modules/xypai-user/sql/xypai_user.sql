@@ -366,14 +366,73 @@ CREATE TABLE `skill_available_times` (
 -- ========================================
 -- Step 3: Insert Initial Test Data
 -- ========================================
+-- 注意：用户要出现在首页列表，必须满足：
+-- 1. users.deleted = 0 (账号正常)
+-- 2. 至少有一个 skills.is_online = 1 的技能 (有上架技能)
 
--- Insert test user
-INSERT INTO `users` (`user_id`, `mobile`, `country_code`, `nickname`, `avatar`, `gender`, `bio`) VALUES
-(1, '13800138000', '+86', '测试用户', 'https://cdn.example.com/avatar/default.png', 'male', '这是一个测试用户');
+-- ========================================
+-- 3.1 插入测试用户 (5个用户，覆盖不同场景)
+-- ========================================
+INSERT INTO `users` (`user_id`, `mobile`, `country_code`, `nickname`, `avatar`, `gender`, `birthday`, `residence`, `height`, `weight`, `occupation`, `bio`, `latitude`, `longitude`, `is_online`, `last_login_at`) VALUES
+-- 用户1: 深圳南山 - 男性 - 在线
+(1, '13800138001', '+86', '小明同学', 'https://randomuser.me/api/portraits/men/32.jpg', 'male', '1998-05-15', '广东省深圳市南山区', 175, 70, '程序员', '热爱游戏，王者荣耀王者段位', 22.5431, 113.9298, 1, NOW()),
+-- 用户2: 深圳福田 - 女性 - 在线
+(2, '13800138002', '+86', '小红姐姐', 'https://randomuser.me/api/portraits/women/44.jpg', 'female', '1996-08-20', '广东省深圳市福田区', 165, 50, '设计师', '陪玩达人，声音好听', 22.5467, 114.0579, 1, NOW()),
+-- 用户3: 深圳宝安 - 女性 - 离线
+(3, '13800138003', '+86', '游戏女神', 'https://randomuser.me/api/portraits/women/68.jpg', 'female', '2000-03-10', '广东省深圳市宝安区', 168, 52, '主播', 'LOL钻石选手，期待与你组队', 22.5560, 113.8830, 0, DATE_SUB(NOW(), INTERVAL 2 HOUR)),
+-- 用户4: 深圳龙岗 - 男性 - 在线
+(4, '13800138004', '+86', '电竞小王子', 'https://randomuser.me/api/portraits/men/75.jpg', 'male', '1999-11-25', '广东省深圳市龙岗区', 180, 75, '电竞选手', '前职业选手，带你上分', 22.7200, 114.2470, 1, NOW()),
+-- 用户5: 深圳罗湖 - 女性 - 在线
+(5, '13800138005', '+86', '甜心小姐姐', 'https://randomuser.me/api/portraits/women/90.jpg', 'female', '1997-07-07', '广东省深圳市罗湖区', 162, 48, '学生', '治愈系声音，聊天解压', 22.5485, 114.1315, 1, DATE_SUB(NOW(), INTERVAL 30 MINUTE));
 
--- Insert user stats for test user
-INSERT INTO `user_stats` (`user_id`, `following_count`, `fans_count`, `likes_count`) VALUES
-(1, 0, 0, 0);
+-- ========================================
+-- 3.2 插入用户统计数据
+-- ========================================
+INSERT INTO `user_stats` (`user_id`, `following_count`, `fans_count`, `likes_count`, `skills_count`, `orders_count`) VALUES
+(1, 10, 156, 520, 2, 45),
+(2, 25, 890, 2100, 1, 120),
+(3, 15, 450, 980, 2, 78),
+(4, 8, 1200, 3500, 1, 200),
+(5, 30, 320, 650, 1, 35);
+
+-- ========================================
+-- 3.3 插入技能数据 (关键！is_online=1 才会显示)
+-- ========================================
+INSERT INTO `skills` (`skill_id`, `user_id`, `skill_name`, `skill_type`, `cover_image`, `description`, `price`, `price_unit`, `is_online`, `rating`, `review_count`, `order_count`, `game_name`, `game_rank`) VALUES
+-- 用户1的技能 (2个)
+(1, 1, '王者荣耀陪玩', 'online', 'https://cdn.example.com/skill/wzry.png', '王者荣耀王者段位，可带上分、娱乐局', 30.00, '局', 1, 4.85, 120, 45, '王者荣耀', '王者'),
+(2, 1, 'LOL陪玩', 'online', 'https://cdn.example.com/skill/lol.png', '英雄联盟钻石段位，擅长打野和中单', 25.00, '局', 1, 4.70, 85, 30, '英雄联盟', '钻石'),
+-- 用户2的技能
+(3, 2, '语音聊天', 'online', 'https://cdn.example.com/skill/chat.png', '甜美声音陪聊，解忧树洞，倾听你的故事', 50.00, '小时', 1, 4.95, 200, 120, NULL, NULL),
+-- 用户3的技能 (2个)
+(4, 3, 'LOL上分', 'online', 'https://cdn.example.com/skill/lol2.png', 'LOL钻石选手，专业带上分，不上分退款', 35.00, '局', 1, 4.80, 150, 78, '英雄联盟', '钻石'),
+(5, 3, '和平精英陪玩', 'online', 'https://cdn.example.com/skill/pubg.png', '和平精英王牌选手，带你吃鸡', 28.00, '局', 1, 4.65, 60, 25, '和平精英', '王牌'),
+-- 用户4的技能
+(6, 4, '电竞教学', 'online', 'https://cdn.example.com/skill/teach.png', '前职业选手，一对一指导，快速提升', 100.00, '小时', 1, 4.98, 300, 200, '英雄联盟', '超凡大师'),
+-- 用户5的技能
+(7, 5, '治愈聊天', 'online', 'https://cdn.example.com/skill/heal.png', '温柔声线，治愈系陪伴，驱散你的烦恼', 40.00, '小时', 1, 4.75, 80, 35, NULL, NULL);
+
+-- ========================================
+-- 3.4 插入技能展示图片
+-- ========================================
+INSERT INTO `skill_images` (`skill_id`, `image_url`, `sort_order`) VALUES
+(1, 'https://cdn.example.com/skill/wzry_1.png', 1),
+(1, 'https://cdn.example.com/skill/wzry_2.png', 2),
+(3, 'https://cdn.example.com/skill/chat_1.png', 1),
+(6, 'https://cdn.example.com/skill/teach_1.png', 1),
+(6, 'https://cdn.example.com/skill/teach_2.png', 2);
+
+-- ========================================
+-- 3.5 插入技能服务承诺
+-- ========================================
+INSERT INTO `skill_promises` (`skill_id`, `promise_text`, `sort_order`) VALUES
+(1, '准时上线', 1),
+(1, '态度友好', 2),
+(1, '不满意退款', 3),
+(3, '声音甜美', 1),
+(3, '耐心倾听', 2),
+(6, '专业指导', 1),
+(6, '包教包会', 2);
 
 -- ========================================
 -- Step 4: Verification

@@ -1,31 +1,37 @@
 package org.dromara.appbff.controller;
 
-import cn.dev33.satoken.stp.StpUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.appbff.domain.dto.HomeFeedQueryDTO;
-import org.dromara.appbff.domain.vo.UserCardVO;
+import org.dromara.appbff.domain.vo.HomeFeedResultVO;
+import org.dromara.appbff.service.HomeFeedService;
 import org.dromara.common.core.domain.R;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 首页 Feed 流控制器 (BFF 聚合服务)
  *
+ * <p>功能：获取首页用户推荐列表</p>
+ * <p>数据来源：通过 RPC 调用 xypai-user 服务获取真实用户数据</p>
+ *
  * @author XyPai Team
  * @date 2025-11-20
+ * @updated 2025-11-29 改造为 RPC 真实数据调用
  */
 @Slf4j
 @Validated
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/home")
+@Tag(name = "首页用户推荐", description = "首页用户推荐流相关接口")
 public class HomeFeedController {
+
+    private final HomeFeedService homeFeedService;
 
     /**
      * 获取首页用户推荐 Feed 流
@@ -33,52 +39,30 @@ public class HomeFeedController {
      * @param queryDTO 查询参数
      * @return 用户推荐列表
      */
+    @Operation(summary = "获取首页用户推荐列表", description = "获取首页用户推荐流，支持分页和类型筛选")
     @GetMapping("/feed")
-    public R<Map<String, Object>> getHomeFeed(HomeFeedQueryDTO queryDTO) {
-        log.info("获取首页Feed流 - type: {}, pageNum: {}, cityCode: {}",
-            queryDTO.getType(), queryDTO.getPageNum(), queryDTO.getCityCode());
+    public R<HomeFeedResultVO> getHomeFeed(HomeFeedQueryDTO queryDTO) {
+        log.info("收到首页Feed流请求 - type: {}, pageNum: {}, pageSize: {}, cityCode: {}",
+            queryDTO.getType(), queryDTO.getPageNum(), queryDTO.getPageSize(), queryDTO.getCityCode());
 
-        // 获取当前登录用户ID
-        Long currentUserId = StpUtil.isLogin() ? StpUtil.getLoginIdAsLong() : null;
+        // 设置默认值
+        if (queryDTO.getPageNum() == null || queryDTO.getPageNum() < 1) {
+            queryDTO.setPageNum(1);
+        }
+        if (queryDTO.getPageSize() == null || queryDTO.getPageSize() < 1) {
+            queryDTO.setPageSize(10);
+        }
+        if (queryDTO.getType() == null || queryDTO.getType().isEmpty()) {
+            queryDTO.setType("offline"); // 默认线下用户
+        }
 
-        // TODO: 这里应该调用 Service 层进行 RPC 聚合
-        // 示例代码：模拟返回数据
-        List<UserCardVO> mockList = createMockUserList(queryDTO.getType());
+        // 调用 Service 获取真实数据
+        HomeFeedResultVO result = homeFeedService.getHomeFeedList(queryDTO);
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("list", mockList);
-        result.put("total", (long) mockList.size());
-        result.put("hasMore", false);
+        log.info("首页Feed流响应 - 返回 {} 条数据, hasMore: {}",
+            result.getList() != null ? result.getList().size() : 0,
+            result.getHasMore());
 
         return R.ok(result);
     }
-
-    /**
-     * 创建模拟用户列表 (临时代码，实际应该通过 RPC 调用)
-     */
-    private List<UserCardVO> createMockUserList(String type) {
-        List<UserCardVO> list = new ArrayList<>();
-
-        for (int i = 1; i <= 5; i++) {
-            UserCardVO user = new UserCardVO();
-            user.setUserId((long) (1000 + i));
-            user.setNickname(("online".equals(type) ? "线上" : "线下") + "用户" + i);
-            user.setAvatar("https://example.com/avatar" + i + ".jpg");
-            user.setGender(i % 2 == 0 ? 1 : 2);
-            user.setAge(20 + i);
-            user.setCity("深圳");
-            user.setDistance(1000.0 * i);
-            user.setDistanceText(i + "km");
-            user.setSkills(List.of("摄影", "视频剪辑"));
-            user.setFeedCount(10 + i);
-            user.setFansCount(100 + i * 10);
-            user.setIsOnline("online".equals(type));
-            user.setIsFollowed(false);
-            user.setBio("这是用户" + i + "的个人简介");
-            list.add(user);
-        }
-
-        return list;
-    }
-
 }

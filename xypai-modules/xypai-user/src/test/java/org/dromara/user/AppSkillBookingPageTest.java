@@ -19,13 +19,16 @@ import java.util.Map;
  * 测试 App 技能预约页面的UserService相关功能
  *
  * 测试流程:
- * 1. 📋 获取技能预约详情
- * 2. ⭐ 获取技能评价列表
+ * 1. 用户注册/登录
+ * 2. 创建测试技能
+ * 3. 获取技能详情（预约详情）
+ * 4. 获取用户技能列表
  *
  * 💡 测试方式说明：
  * - 集成测试，调用真实服务
  * - 需要手动启动：Gateway(8080), xypai-auth(9211), xypai-user(9401), Nacos, Redis, MySQL
  * - 注意：订单相关接口属于xypai-trade模块，不在此测试范围内
+ * - 注意：技能评价功能需要 skill_reviews 表，当前版本暂未实现
  *
  * @author XyPai Team
  * @date 2025-11-18
@@ -46,7 +49,7 @@ public class AppSkillBookingPageTest {
     // 保存登录后的 Token，用于后续测试
     private static String authToken;
     private static String userId;
-    private static String testSkillId = "test_skill_001";  // 测试用技能ID
+    private static Long testSkillId;  // 测试用技能ID（动态创建）
 
     @BeforeAll
     static void setup() {
@@ -80,7 +83,7 @@ public class AppSkillBookingPageTest {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, String>> request = new HttpEntity<>(loginRequest, headers);
 
-            String loginUrl = GATEWAY_URL + "/xypai-auth/auth/login/sms";
+            String loginUrl = GATEWAY_URL + "/xypai-auth/api/auth/login/sms";
             ResponseEntity<Map> response = restTemplate.postForEntity(loginUrl, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -123,21 +126,77 @@ public class AppSkillBookingPageTest {
     }
 
     /**
-     * 🎯 测试2：获取技能预约详情
+     * 🎯 测试2：创建测试技能
      */
     @Test
     @Order(2)
-    @DisplayName("测试2: 获取技能预约详情")
-    public void test2_GetSkillBookingDetail() {
+    @DisplayName("测试2: 创建测试技能")
+    public void test2_CreateTestSkill() {
         try {
-            log.info("\n[测试2] 获取技能预约详情");
+            log.info("\n[测试2] 创建测试技能");
             ensureAuthenticated();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("Authorization", "Bearer " + authToken);
+
+            // 创建线上技能（游戏陪玩）
+            Map<String, Object> skillRequest = new HashMap<>();
+            skillRequest.put("gameName", "王者荣耀");
+            skillRequest.put("gameRank", "王者");
+            skillRequest.put("skillName", "王者荣耀陪玩");
+            skillRequest.put("description", "专业王者荣耀陪玩，段位王者，有丰富的游戏经验，可以带飞上分！");
+            skillRequest.put("price", 50);
+            skillRequest.put("serviceHours", 1);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(skillRequest, headers);
+
+            // 正确的路径: /api/user/skills/online
+            String createUrl = GATEWAY_URL + "/xypai-user/api/user/skills/online";
+            ResponseEntity<Map> response = restTemplate.postForEntity(createUrl, request, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> responseBody = response.getBody();
+                Integer code = (Integer) responseBody.get("code");
+
+                if (code != null && code == 200) {
+                    Object data = responseBody.get("data");
+                    testSkillId = Long.valueOf(String.valueOf(data));
+                    log.info("✅ 创建技能成功 - skillId: {}", testSkillId);
+                } else {
+                    String msg = (String) responseBody.get("msg");
+                    log.warn("⚠️ 创建技能返回非200: {}", msg);
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 测试2失败: {}", e.getMessage());
+            log.warn("⚠️ 创建技能失败，后续测试可能受影响");
+        }
+    }
+
+    /**
+     * 🎯 测试3：获取技能详情（预约详情）
+     */
+    @Test
+    @Order(3)
+    @DisplayName("测试3: 获取技能详情（预约详情）")
+    public void test3_GetSkillDetail() {
+        try {
+            log.info("\n[测试3] 获取技能详情（预约详情）");
+            ensureAuthenticated();
+
+            if (testSkillId == null) {
+                log.warn("⚠️ 没有可用的技能ID，跳过测试");
+                return;
+            }
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer " + authToken);
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            String detailUrl = GATEWAY_URL + "/xypai-user/api/skills/" + testSkillId + "/booking-detail";
+            // 正确的路径: /api/user/skills/{skillId}
+            String detailUrl = GATEWAY_URL + "/xypai-user/api/user/skills/" + testSkillId;
             ResponseEntity<Map> response = restTemplate.exchange(detailUrl, org.springframework.http.HttpMethod.GET, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
@@ -146,55 +205,100 @@ public class AppSkillBookingPageTest {
 
                 if (code != null && code == 200) {
                     Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
-                    log.info("✅ 获取技能预约详情成功");
+                    log.info("✅ 获取技能详情成功");
+                    log.info("   - skillId: {}", data.get("skillId"));
+                    log.info("   - skillName: {}", data.get("skillName"));
+                    log.info("   - skillType: {}", data.get("skillType"));
+                    log.info("   - price: {}", data.get("price"));
+                    log.info("   - gameName: {}", data.get("gameName"));
+                    log.info("   - gameRank: {}", data.get("gameRank"));
                 } else {
                     String msg = (String) responseBody.get("msg");
-                    log.warn("⚠️ 获取技能预约详情返回非200: {}", msg);
+                    log.warn("⚠️ 获取技能详情返回非200: {}", msg);
                 }
             }
 
         } catch (Exception e) {
-            log.error("❌ 测试2失败: {}", e.getMessage());
-            log.warn("⚠️ 技能不存在或接口未实现，这是正常的");
+            log.error("❌ 测试3失败: {}", e.getMessage());
         }
     }
 
     /**
-     * 🎯 测试3：获取技能评价列表
+     * 🎯 测试4：获取我的技能列表
      */
     @Test
-    @Order(3)
-    @DisplayName("测试3: 获取技能评价列表")
-    public void test3_GetSkillReviews() {
+    @Order(4)
+    @DisplayName("测试4: 获取我的技能列表")
+    public void test4_GetMySkills() {
         try {
-            log.info("\n[测试3] 获取技能评价列表");
+            log.info("\n[测试4] 获取我的技能列表");
             ensureAuthenticated();
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer " + authToken);
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
-            String reviewsUrl = GATEWAY_URL + "/xypai-user/api/skills/" + testSkillId + "/reviews?pageNum=1&pageSize=20";
-            ResponseEntity<Map> response = restTemplate.exchange(reviewsUrl, org.springframework.http.HttpMethod.GET, request, Map.class);
+            // 正确的路径: /api/user/skills/my
+            String mySkillsUrl = GATEWAY_URL + "/xypai-user/api/user/skills/my?pageNum=1&pageSize=20";
+            ResponseEntity<Map> response = restTemplate.exchange(mySkillsUrl, org.springframework.http.HttpMethod.GET, request, Map.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 Map<String, Object> responseBody = response.getBody();
                 Integer code = (Integer) responseBody.get("code");
 
                 if (code != null && code == 200) {
-                    Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
-                    Object reviews = data.get("reviews");
-                    int reviewCount = (reviews instanceof java.util.List) ? ((java.util.List<?>) reviews).size() : 0;
-                    log.info("✅ 获取技能评价列表成功 - 评价数量: {}", reviewCount);
+                    Object rows = responseBody.get("rows");
+                    int skillCount = (rows instanceof java.util.List) ? ((java.util.List<?>) rows).size() : 0;
+                    log.info("✅ 获取我的技能列表成功 - 技能数量: {}", skillCount);
                 } else {
                     String msg = (String) responseBody.get("msg");
-                    log.warn("⚠️ 获取技能评价列表返回非200: {}", msg);
+                    log.warn("⚠️ 获取我的技能列表返回非200: {}", msg);
                 }
             }
 
         } catch (Exception e) {
-            log.error("❌ 测试3失败: {}", e.getMessage());
-            log.warn("⚠️ 技能不存在或接口未实现，这是正常的");
+            log.error("❌ 测试4失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 🎯 测试5：删除测试技能（清理数据）
+     */
+    @Test
+    @Order(5)
+    @DisplayName("测试5: 删除测试技能（清理数据）")
+    public void test5_DeleteTestSkill() {
+        try {
+            log.info("\n[测试5] 删除测试技能（清理数据）");
+            ensureAuthenticated();
+
+            if (testSkillId == null) {
+                log.warn("⚠️ 没有可用的技能ID，跳过删除");
+                return;
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + authToken);
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            // 正确的路径: DELETE /api/user/skills/{skillId}
+            String deleteUrl = GATEWAY_URL + "/xypai-user/api/user/skills/" + testSkillId;
+            ResponseEntity<Map> response = restTemplate.exchange(deleteUrl, org.springframework.http.HttpMethod.DELETE, request, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> responseBody = response.getBody();
+                Integer code = (Integer) responseBody.get("code");
+
+                if (code != null && code == 200) {
+                    log.info("✅ 删除技能成功 - skillId: {}", testSkillId);
+                } else {
+                    String msg = (String) responseBody.get("msg");
+                    log.warn("⚠️ 删除技能返回非200: {}", msg);
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 测试5失败: {}", e.getMessage());
         }
     }
 

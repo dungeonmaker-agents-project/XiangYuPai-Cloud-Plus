@@ -38,4 +38,14 @@ public interface ICommentService {
      */
     void deleteComment(Long commentId, Long userId);
 
+    /**
+     * 置顶/取消置顶评论
+     *
+     * @param commentId 评论ID
+     * @param pin 是否置顶
+     * @param userId 当前用户ID
+     * @return 是否成功
+     */
+    boolean pinComment(Long commentId, Boolean pin, Long userId);
+
 }
