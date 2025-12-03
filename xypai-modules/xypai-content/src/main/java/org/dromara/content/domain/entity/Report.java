@@ -47,7 +47,7 @@ public class Report implements Serializable {
     private Long targetId;
 
     /**
-     * 举报类型: harassment=骚扰, pornography=色情, fraud=诈骗, illegal=违法, spam=垃圾, other=其他
+     * 举报类型: insult=辱骂引战, porn=色情低俗, fraud=诈骗, illegal=违法犯罪, fake=不实信息, minor=未成年人相关, uncomfortable=内容引人不适, other=其他
      */
     private String reasonType;
 
@@ -57,7 +57,7 @@ public class Report implements Serializable {
     private String description;
 
     /**
-     * 举报图片(JSON数组,最多3张)
+     * 举报图片(JSON数组,最多9张)
      */
     private String evidenceImages;
 

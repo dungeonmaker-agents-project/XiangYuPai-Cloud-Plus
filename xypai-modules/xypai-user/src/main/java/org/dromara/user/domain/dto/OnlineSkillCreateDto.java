@@ -11,12 +11,18 @@ import java.util.List;
  * 创建线上技能DTO
  * Create Online Skill DTO
  *
+ * 对应UI文档: 添加技能页_结构文档.md
+ *
  * @author XiangYuPai
  * @since 2025-11-14
+ * @updated 2025-12-02 - 添加skillConfigId和server字段
  */
 @Data
 @Schema(description = "Create online skill request")
 public class OnlineSkillCreateDto {
+
+    @Schema(description = "技能配置ID（关联skill_config表）")
+    private String skillConfigId;
 
     @Schema(description = "Skill type")
     private Integer skillType;
@@ -30,6 +36,9 @@ public class OnlineSkillCreateDto {
     @NotBlank(message = "游戏名称不能为空")
     @Schema(description = "Game name")
     private String gameName;
+
+    @Schema(description = "服务区: QQ区, 微信区")
+    private String server;
 
     @Schema(description = "Rank")
     private String rank;

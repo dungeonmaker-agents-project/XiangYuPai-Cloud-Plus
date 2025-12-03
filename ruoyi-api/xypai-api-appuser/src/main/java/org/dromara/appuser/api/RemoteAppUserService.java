@@ -315,4 +315,171 @@ public interface RemoteAppUserService {
         Integer pageSize,
         String filterBy
     );
+
+    // ==================== 用户信息查询（供内容服务使用） ====================
+
+    /**
+     * 获取用户基本信息（用于动态/评论显示）
+     *
+     * <p>用途：供 xypai-content 调用，获取动态详情页需要显示的用户信息</p>
+     * <p>包含：</p>
+     * <ul>
+     *     <li>基本信息：userId, nickname, avatar, gender, birthday</li>
+     *     <li>等级信息：level, levelName, isRealVerified, isGodVerified, isVip</li>
+     *     <li>统计信息：followingCount, fansCount, likesCount</li>
+     *     <li>关注状态：isFollowed（需传入currentUserId）</li>
+     * </ul>
+     *
+     * @param userId        目标用户ID
+     * @param currentUserId 当前用户ID（可选，用于判断是否已关注）
+     * @return 用户基本信息VO
+     */
+    org.dromara.appuser.api.domain.vo.RemoteAppUserVo getUserBasicInfo(Long userId, Long currentUserId);
+
+    /**
+     * 批量获取用户基本信息
+     *
+     * <p>用途：供 xypai-content 调用，批量获取多个用户的基本信息</p>
+     *
+     * @param userIds       用户ID列表
+     * @param currentUserId 当前用户ID（可选，用于判断是否已关注）
+     * @return 用户信息Map，key=userId, value=RemoteAppUserVo
+     */
+    java.util.Map<Long, org.dromara.appuser.api.domain.vo.RemoteAppUserVo> batchGetUserBasicInfo(
+        java.util.List<Long> userIds,
+        Long currentUserId
+    );
+
+    /**
+     * 检查是否已关注
+     *
+     * @param userId       当前用户ID
+     * @param targetUserId 目标用户ID
+     * @return true=已关注，false=未关注
+     */
+    boolean checkIsFollowed(Long userId, Long targetUserId);
+
+    /**
+     * 关注用户
+     *
+     * @param userId       当前用户ID
+     * @param targetUserId 目标用户ID
+     * @return true=关注成功，false=已经关注过了
+     */
+    boolean followUser(Long userId, Long targetUserId);
+
+    /**
+     * 取消关注
+     *
+     * @param userId       当前用户ID
+     * @param targetUserId 目标用户ID
+     * @return true=取消成功，false=本来就没关注
+     */
+    boolean unfollowUser(Long userId, Long targetUserId);
+
+    /**
+     * 获取关注列表用户ID
+     *
+     * @param userId 用户ID
+     * @return 关注的用户ID列表
+     */
+    java.util.List<Long> getFollowingIds(Long userId);
+
+    // ==================== 对方主页相关 ====================
+
+    /**
+     * 获取对方主页聚合数据
+     *
+     * <p>用途：供 xypai-app-bff 调用，获取对方主页的完整展示数据</p>
+     * <p>包含：</p>
+     * <ul>
+     *     <li>基本信息：头像、昵称、性别、年龄、简介</li>
+     *     <li>等级与认证：等级、实名认证、大神认证、VIP</li>
+     *     <li>统计信息：关注数、粉丝数、获赞数、动态数、技能数</li>
+     *     <li>关系状态：是否关注、是否互关</li>
+     *     <li>操作栏信息：是否可发消息、是否可解锁微信、解锁价格</li>
+     * </ul>
+     *
+     * @param targetUserId  目标用户ID
+     * @param currentUserId 当前用户ID（用于判断关系状态）
+     * @param latitude      当前用户纬度（用于计算距离，可选）
+     * @param longitude     当前用户经度（用于计算距离，可选）
+     * @return 对方主页聚合数据
+     */
+    org.dromara.appuser.api.domain.vo.OtherUserProfileVo getOtherUserProfileData(
+        Long targetUserId,
+        Long currentUserId,
+        Double latitude,
+        Double longitude
+    );
+
+    /**
+     * 获取用户详细资料
+     *
+     * <p>用途：供 xypai-app-bff 调用，获取用户的详细资料信息</p>
+     * <p>包含：居住地、IP归属地、身高、体重、职业、微信（脱敏）、生日、星座</p>
+     *
+     * @param targetUserId  目标用户ID
+     * @param currentUserId 当前用户ID（用于判断是否可查看、是否已解锁微信）
+     * @return 用户详细资料
+     */
+    org.dromara.appuser.api.domain.vo.UserDetailInfoVo getUserDetailInfo(Long targetUserId, Long currentUserId);
+
+    /**
+     * 获取用户技能列表
+     *
+     * <p>用途：供 xypai-app-bff 调用，获取指定用户的技能列表</p>
+     *
+     * @param targetUserId  目标用户ID
+     * @param currentUserId 当前用户ID（可选）
+     * @param pageNum       页码（从1开始）
+     * @param pageSize      每页数量
+     * @return 用户技能列表分页结果
+     */
+    org.dromara.appuser.api.domain.vo.UserSkillsPageResult getUserSkillsList(
+        Long targetUserId,
+        Long currentUserId,
+        Integer pageNum,
+        Integer pageSize
+    );
+
+    // ==================== 微信解锁相关 ====================
+
+    /**
+     * 检查是否已解锁微信
+     *
+     * @param userId       当前用户ID
+     * @param targetUserId 目标用户ID
+     * @return true=已解锁，false=未解锁
+     */
+    boolean checkWechatUnlocked(Long userId, Long targetUserId);
+
+    /**
+     * 解锁微信
+     *
+     * <p>用途：供 xypai-app-bff 调用，用户解锁他人微信号</p>
+     * <p>流程：</p>
+     * <ul>
+     *     <li>1. 检查目标用户是否设置了微信</li>
+     *     <li>2. 检查是否已解锁过</li>
+     *     <li>3. 验证支付密码（如使用金币）</li>
+     *     <li>4. 扣除金币/VIP权益</li>
+     *     <li>5. 记录解锁记录</li>
+     *     <li>6. 返回完整微信号</li>
+     * </ul>
+     *
+     * @param unlockDto 解锁请求参数
+     * @return 解锁结果
+     */
+    org.dromara.appuser.api.domain.vo.WechatUnlockResultVo unlockWechat(
+        org.dromara.appuser.api.domain.dto.WechatUnlockDto unlockDto
+    );
+
+    /**
+     * 获取微信解锁价格
+     *
+     * @param targetUserId 目标用户ID
+     * @return 解锁价格（金币），如果用户未设置微信返回null
+     */
+    java.math.BigDecimal getWechatUnlockPrice(Long targetUserId);
 }

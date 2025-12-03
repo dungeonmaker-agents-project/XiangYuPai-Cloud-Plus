@@ -10,10 +10,9 @@ import lombok.NoArgsConstructor;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
- * 评论列表项VO
+ * 评论列表项VO（仅支持一级评论）
  *
  * @author XiangYuPai
  */
@@ -45,26 +44,17 @@ public class CommentListVO implements Serializable {
     @Schema(description = "点赞数")
     private Integer likeCount;
 
-    @Schema(description = "回复数")
-    private Integer replyCount;
-
     @Schema(description = "是否置顶")
     private Boolean isTop;
 
     @Schema(description = "是否已点赞")
     private Boolean isLiked;
 
-    @Schema(description = "二级回复列表(前3条)")
-    private List<ReplyVO> replies;
-
-    @Schema(description = "总回复数")
-    private Integer totalReplies;
-
-    @Schema(description = "是否有更多回复")
-    private Boolean hasMoreReplies;
-
     @Schema(description = "是否可删除")
     private Boolean canDelete;
+
+    @Schema(description = "评论位置/IP归属地")
+    private String location;
 
     @Schema(description = "创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
@@ -87,32 +77,12 @@ public class CommentListVO implements Serializable {
 
         @Schema(description = "头像")
         private String avatar;
-    }
 
-    /**
-     * 二级回复内嵌VO
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "二级回复")
-    public static class ReplyVO implements Serializable {
-        @Schema(description = "回复ID")
-        private Long id;
+        @Schema(description = "用户等级: 1-青铜,2-白银,3-黄金,4-铂金,5-钻石,6-大师,7-王者")
+        private Integer level;
 
-        @Schema(description = "回复内容")
-        private String content;
-
-        @Schema(description = "回复用户信息")
-        private UserInfoVO userInfo;
-
-        @Schema(description = "被回复用户昵称")
-        private String replyToUserNickname;
-
-        @Schema(description = "创建时间")
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-        private LocalDateTime createdAt;
+        @Schema(description = "用户等级名称")
+        private String levelName;
     }
 
 }

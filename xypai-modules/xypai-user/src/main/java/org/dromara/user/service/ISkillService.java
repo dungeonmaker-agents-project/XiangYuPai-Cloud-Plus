@@ -9,8 +9,10 @@ import org.dromara.user.domain.dto.SkillCreateDto;
 import org.dromara.user.domain.dto.SkillUpdateDto;
 import org.dromara.user.domain.dto.OnlineSkillCreateDto;
 import org.dromara.user.domain.dto.OfflineSkillCreateDto;
+import org.dromara.user.domain.dto.SkilledUsersQueryDto;
 import org.dromara.user.domain.vo.SkillDetailVo;
 import org.dromara.user.domain.vo.SkillVo;
+import org.dromara.user.domain.vo.SkilledUsersResultVo;
 
 import java.math.BigDecimal;
 
@@ -115,4 +117,14 @@ public interface ISkillService extends IService<Skill> {
      * @return 技能列表
      */
     TableDataInfo<SkillVo> searchNearbySkills(BigDecimal latitude, BigDecimal longitude, Integer radiusMeters, PageQuery pageQuery);
+
+    /**
+     * 获取有技能的用户列表
+     *
+     * <p>只返回有上架技能的用户，支持分页、筛选和排序</p>
+     *
+     * @param queryDto 查询参数
+     * @return 有技能用户列表结果
+     */
+    SkilledUsersResultVo getSkilledUsers(SkilledUsersQueryDto queryDto);
 }

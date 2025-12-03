@@ -39,6 +39,12 @@ public class Skill implements Serializable {
     private Long userId;
 
     /**
+     * 技能配置ID（关联skill_config表）
+     */
+    @TableField("skill_config_id")
+    private Long skillConfigId;
+
+    /**
      * 技能名称（2-50字符）
      */
     @TableField("skill_name")
@@ -113,6 +119,12 @@ public class Skill implements Serializable {
     private String gameRank;
 
     /**
+     * 服务区: QQ区, 微信区（线上技能专用）
+     */
+    @TableField("server")
+    private String server;
+
+    /**
      * 服务时长（小时/局，线上技能专用）
      */
     @TableField("service_hours")
@@ -131,6 +143,12 @@ public class Skill implements Serializable {
      */
     @TableField("service_location")
     private String serviceLocation;
+
+    /**
+     * 活动时间（线下技能预约时间）
+     */
+    @TableField("activity_time")
+    private LocalDateTime activityTime;
 
     /**
      * 纬度

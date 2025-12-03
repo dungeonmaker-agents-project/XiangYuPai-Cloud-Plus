@@ -5,6 +5,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
+import org.dromara.appuser.api.RemoteAppUserService;
+import org.dromara.appuser.api.domain.vo.RemoteAppUserVo;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.redis.utils.RedisUtils;
 import org.dromara.content.domain.dto.FeedListQueryDTO;
@@ -19,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +46,12 @@ public class FeedServiceImpl implements IFeedService {
     private final LikeMapper likeMapper;
     private final CollectionMapper collectionMapper;
 
+    /**
+     * 远程用户服务（Dubbo RPC）
+     */
+    @DubboReference(check = false)
+    private RemoteAppUserService remoteAppUserService;
+
     private static final String CACHE_KEY_FEED_DETAIL = "feed:detail:";
     private static final String CACHE_KEY_FEED_LIST = "feed:list:";
 
@@ -53,11 +64,114 @@ public class FeedServiceImpl implements IFeedService {
         wrapper.eq(Feed::getStatus, 0); // 正常状态
         wrapper.eq(Feed::getDeleted, 0); // 未删除
 
+        // 如果指定了内容类型，则过滤 (1=动态, 2=活动, 3=技能)
+        if (queryDTO.getType() != null) {
+            wrapper.eq(Feed::getType, queryDTO.getType());
+            log.info("按内容类型过滤: type={}", queryDTO.getType());
+        }
+
+        // 2.5 根据sortBy进行排序 (distance=距离, followed=关注的用户, likes=点赞数)
+        String sortBy = queryDTO.getSortBy();
+        if ("distance".equals(sortBy)) {
+            // 按距离排序: 需要经纬度
+            if (queryDTO.getLatitude() == null || queryDTO.getLongitude() == null) {
+                throw new ServiceException("按距离排序需要提供经纬度");
+            }
+            Integer radius = queryDTO.getRadius() != null ? queryDTO.getRadius() : 50; // 默认50km
+            List<Feed> nearbyFeeds = feedMapper.selectNearbyFeeds(
+                queryDTO.getLatitude(),
+                queryDTO.getLongitude(),
+                radius,
+                queryDTO.getPageSize() * queryDTO.getPageNum() // 获取足够多数据用于分页
+            );
+
+            // 过滤类型
+            if (queryDTO.getType() != null) {
+                nearbyFeeds = nearbyFeeds.stream()
+                    .filter(f -> f.getType().equals(queryDTO.getType()))
+                    .collect(Collectors.toList());
+            }
+
+            // 手动分页
+            int start = (queryDTO.getPageNum() - 1) * queryDTO.getPageSize();
+            int end = Math.min(start + queryDTO.getPageSize(), nearbyFeeds.size());
+            List<Feed> pagedFeeds = nearbyFeeds.subList(
+                Math.min(start, nearbyFeeds.size()),
+                Math.min(end, nearbyFeeds.size())
+            );
+
+            List<FeedListVO> voList = pagedFeeds.stream()
+                .map(feed -> convertToListVO(feed, currentUserId))
+                .collect(Collectors.toList());
+
+            Page<FeedListVO> resultPage = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+            resultPage.setRecords(voList);
+            resultPage.setTotal(nearbyFeeds.size());
+            log.info("按距离排序: 共{}条, 返回{}条", nearbyFeeds.size(), voList.size());
+            return resultPage;
+
+        } else if ("followed".equals(sortBy)) {
+            // 按关注的用户筛选: 需要登录
+            if (currentUserId == null) {
+                throw new ServiceException("查看关注用户动态需要登录");
+            }
+            // 调用UserService RPC获取关注列表
+            List<Long> followingIds = new ArrayList<>();
+            try {
+                followingIds = remoteAppUserService.getFollowingIds(currentUserId);
+            } catch (Exception e) {
+                log.warn("RPC调用获取关注列表失败: userId={}, error={}", currentUserId, e.getMessage());
+            }
+
+            if (followingIds.isEmpty()) {
+                log.info("用户 {} 暂无关注的人", currentUserId);
+                Page<FeedListVO> emptyPage = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
+                emptyPage.setRecords(new ArrayList<>());
+                emptyPage.setTotal(0);
+                return emptyPage;
+            }
+
+            wrapper.in(Feed::getUserId, followingIds);
+            wrapper.orderByDesc(Feed::getCreatedTimestamp);
+
+            Page<Feed> feedPage = feedMapper.selectPage(page, wrapper);
+            List<FeedListVO> voList = feedPage.getRecords().stream()
+                .map(feed -> convertToListVO(feed, currentUserId))
+                .collect(Collectors.toList());
+
+            Page<FeedListVO> resultPage = new Page<>(feedPage.getCurrent(), feedPage.getSize());
+            resultPage.setRecords(voList);
+            resultPage.setTotal(feedPage.getTotal());
+            log.info("按关注用户筛选: 共{}条", feedPage.getTotal());
+            return resultPage;
+
+        } else if ("likes".equals(sortBy)) {
+            // 按点赞数排序
+            wrapper.orderByDesc(Feed::getLikeCount);
+
+            Page<Feed> feedPage = feedMapper.selectPage(page, wrapper);
+            List<FeedListVO> voList = feedPage.getRecords().stream()
+                .map(feed -> convertToListVO(feed, currentUserId))
+                .collect(Collectors.toList());
+
+            Page<FeedListVO> resultPage = new Page<>(feedPage.getCurrent(), feedPage.getSize());
+            resultPage.setRecords(voList);
+            resultPage.setTotal(feedPage.getTotal());
+            log.info("按点赞数排序: 共{}条", feedPage.getTotal());
+            return resultPage;
+        }
+
         // 2. 根据tabType查询不同数据
         if ("follow".equals(queryDTO.getTabType())) {
-            // TODO: 调用UserService RPC获取关注列表
-            // 暂时返回空列表
+            // 调用UserService RPC获取关注列表
             List<Long> followingIds = new ArrayList<>();
+            if (currentUserId != null) {
+                try {
+                    followingIds = remoteAppUserService.getFollowingIds(currentUserId);
+                } catch (Exception e) {
+                    log.warn("RPC调用获取关注列表失败: userId={}, error={}", currentUserId, e.getMessage());
+                }
+            }
             if (followingIds.isEmpty()) {
                 return new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
             }
@@ -153,6 +267,8 @@ public class FeedServiceImpl implements IFeedService {
         FeedDetailVO cached = RedisUtils.getCacheObject(cacheKey);
         if (cached != null) {
             log.debug("从缓存获取动态详情: {}", feedId);
+            // 重要：即使使用缓存，也需要实时更新用户相关状态
+            updateUserRelatedStatus(cached, userId);
             return cached;
         }
 
@@ -182,6 +298,43 @@ public class FeedServiceImpl implements IFeedService {
         RedisUtils.setCacheObject(cacheKey, vo, Duration.ofMinutes(10));
 
         return vo;
+    }
+
+    /**
+     * 更新用户相关状态（isFollowed, isLiked, isCollected）
+     * 用于缓存命中后实时更新用户相关状态
+     */
+    private void updateUserRelatedStatus(FeedDetailVO vo, Long userId) {
+        if (userId == null) {
+            // 未登录用户，重置为默认状态
+            vo.setIsLiked(false);
+            vo.setIsCollected(false);
+            vo.setCanEdit(false);
+            vo.setCanDelete(false);
+            if (vo.getUserInfo() != null) {
+                vo.getUserInfo().setIsFollowed(false);
+            }
+            return;
+        }
+
+        // 实时查询点赞/收藏状态
+        vo.setIsLiked(checkIsLiked(userId, "feed", vo.getId()));
+        vo.setIsCollected(checkIsCollected(userId, vo.getId()));
+
+        // 实时查询关注状态
+        if (vo.getUserInfo() != null && vo.getUserInfo().getId() != null) {
+            try {
+                boolean isFollowed = remoteAppUserService.checkIsFollowed(userId, vo.getUserInfo().getId());
+                vo.getUserInfo().setIsFollowed(isFollowed);
+            } catch (Exception e) {
+                log.warn("查询关注状态失败: userId={}, targetUserId={}, error={}",
+                    userId, vo.getUserInfo().getId(), e.getMessage());
+            }
+        }
+
+        // 更新编辑/删除权限
+        vo.setCanEdit(vo.getUserId().equals(userId));
+        vo.setCanDelete(vo.getUserId().equals(userId));
     }
 
     @Override
@@ -402,9 +555,15 @@ public class FeedServiceImpl implements IFeedService {
     private void incrementViewCount(Long feedId) {
         // 使用Redis计数器
         String countKey = "feed:view:count:" + feedId;
-        Long count = RedisUtils.getCacheObject(countKey);
-        if (count == null) {
-            count = 0L;
+        Object cached = RedisUtils.getCacheObject(countKey);
+        Long count = 0L;
+        if (cached != null) {
+            // 处理Redis返回的不同数值类型
+            if (cached instanceof Long) {
+                count = (Long) cached;
+            } else if (cached instanceof Number) {
+                count = ((Number) cached).longValue();
+            }
         }
         count++;
         RedisUtils.setCacheObject(countKey, count, Duration.ofDays(1));
@@ -552,16 +711,43 @@ public class FeedServiceImpl implements IFeedService {
 
     /**
      * 获取用户信息 (用于FeedListVO)
-     * TODO: 调用UserService RPC获取真实用户信息
+     * 通过RPC调用UserService获取真实用户信息
      */
     private FeedListVO.UserInfoVO getUserInfo(Long userId, Long currentUserId) {
+        try {
+            RemoteAppUserVo userVo = remoteAppUserService.getUserBasicInfo(userId, currentUserId);
+            if (userVo != null) {
+                // 计算年龄
+                Integer age = null;
+                if (userVo.getBirthday() != null) {
+                    age = Period.between(userVo.getBirthday(), LocalDate.now()).getYears();
+                }
+
+                return FeedListVO.UserInfoVO.builder()
+                    .id(userVo.getUserId())
+                    .nickname(userVo.getNickname())
+                    .avatar(userVo.getAvatar())
+                    .gender(userVo.getGender())
+                    .age(age)
+                    .isFollowed(userVo.getIsFollowed())
+                    .isRealVerified(userVo.getIsRealVerified())
+                    .isGodVerified(userVo.getIsGodVerified())
+                    .isVip(userVo.getIsVip())
+                    .isPopular(userVo.getIsGodVerified()) // 大神认证即为人气用户
+                    .build();
+            }
+        } catch (Exception e) {
+            log.warn("RPC调用获取用户信息失败: userId={}, error={}", userId, e.getMessage());
+        }
+
+        // 降级: 返回默认用户信息
         return FeedListVO.UserInfoVO.builder()
             .id(userId)
             .nickname("用户" + userId)
             .avatar("https://via.placeholder.com/100")
             .gender("male")
             .age(25)
-            .isFollowed(false) // TODO: 调用UserService RPC检查关注状态
+            .isFollowed(false)
             .isRealVerified(false)
             .isGodVerified(false)
             .isVip(false)
@@ -571,16 +757,46 @@ public class FeedServiceImpl implements IFeedService {
 
     /**
      * 获取用户信息 (用于FeedDetailVO)
-     * TODO: 调用UserService RPC获取真实用户信息
+     * 通过RPC调用UserService获取真实用户信息，包含等级信息
      */
     private FeedDetailVO.UserInfoVO getUserInfoForDetail(Long userId, Long currentUserId) {
+        try {
+            RemoteAppUserVo userVo = remoteAppUserService.getUserBasicInfo(userId, currentUserId);
+            if (userVo != null) {
+                // 计算年龄
+                Integer age = null;
+                if (userVo.getBirthday() != null) {
+                    age = Period.between(userVo.getBirthday(), LocalDate.now()).getYears();
+                }
+
+                return FeedDetailVO.UserInfoVO.builder()
+                    .id(userVo.getUserId())
+                    .nickname(userVo.getNickname())
+                    .avatar(userVo.getAvatar())
+                    .gender(userVo.getGender())
+                    .age(age)
+                    .level(userVo.getLevel())
+                    .levelName(userVo.getLevelName())
+                    .isFollowed(userVo.getIsFollowed())
+                    .isRealVerified(userVo.getIsRealVerified())
+                    .isGodVerified(userVo.getIsGodVerified())
+                    .isVip(userVo.getIsVip())
+                    .build();
+            }
+        } catch (Exception e) {
+            log.warn("RPC调用获取用户信息失败: userId={}, error={}", userId, e.getMessage());
+        }
+
+        // 降级: 返回默认用户信息
         return FeedDetailVO.UserInfoVO.builder()
             .id(userId)
             .nickname("用户" + userId)
             .avatar("https://via.placeholder.com/100")
             .gender("male")
             .age(25)
-            .isFollowed(false) // TODO: 调用UserService RPC检查关注状态
+            .level(1)
+            .levelName("青铜")
+            .isFollowed(false)
             .isRealVerified(false)
             .isGodVerified(false)
             .isVip(false)

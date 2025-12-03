@@ -41,6 +41,9 @@ import java.util.Map;
  * - POST   /xypai-content/api/v1/interaction/like               点赞/取消点赞
  * - POST   /xypai-content/api/v1/interaction/collect            收藏/取消收藏
  * - POST   /xypai-content/api/v1/interaction/share              分享动态
+ * - POST   /xypai-content/api/v1/interaction/follow/{userId}    关注用户
+ * - DELETE /xypai-content/api/v1/interaction/follow/{userId}    取消关注
+ * - GET    /xypai-content/api/v1/interaction/follow/check/{userId}  检查关注状态
  *
  * 【xypai-auth (认证服务, 8200)】
  * - POST   /xypai-auth/api/auth/login/sms                        用户登录
@@ -60,16 +63,19 @@ import java.util.Map;
  * 10. 用户B发布二级回复 (xypai-content)
  * 11. 用户B点赞评论 (xypai-content)
  * 12. 用户B分享动态 (xypai-content)
- * 13. 用户A删除自己的评论 (xypai-content)
- * 14. 用户A删除自己的动态 (xypai-content)
+ * 13. 用户B关注用户A (新增) (xypai-content)
+ * 14. 用户B获取动态详情验证用户信息 (新增) - 验证level、isFollowed字段
+ * 15. 用户B取消关注用户A (新增) (xypai-content)
+ * 16. 用户A删除自己的评论 (xypai-content)
+ * 17. 用户A删除自己的动态 (xypai-content)
  *
  * 💡 测试说明:
  * - 本测试通过 Gateway (8080) 调用各个微服务
  * - 动态详情是核心社交功能，包含完整的CRUD和互动功能
- * - 需要启动: Gateway(8080), xypai-auth(8200), xypai-content(9403), Nacos, MySQL, Redis
+ * - 需要启动: Gateway(8080), xypai-auth(8200), xypai-content(9403), xypai-user(9401), Nacos, MySQL, Redis
  *
  * @author XyPai Team
- * @date 2025-11-24
+ * @date 2025-12-01
  */
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -762,15 +768,155 @@ public class Page03_FeedDetailTest {
     }
 
     // ============================================================
-    // 测试13: 用户A删除自己的评论
+    // 测试13: 用户B关注用户A
     // ============================================================
     @Test
     @Order(13)
-    @DisplayName("[测试13] 用户A删除自己的评论")
-    void test13_deleteComment() {
+    @DisplayName("[测试13] 用户B关注用户A")
+    void test13_followUser() {
         log.info("\n");
         log.info("┌─────────────────────────────────────────────────────────┐");
-        log.info("│ [测试13] 用户A删除自己的评论                               │");
+        log.info("│ [测试13] 用户B关注用户A                                    │");
+        log.info("└─────────────────────────────────────────────────────────┘");
+
+        try {
+            String url = GATEWAY_URL + "/xypai-content/api/v1/interaction/follow/" + userIdA;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(authTokenUserB);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
+
+            log.info("   - 状态码: {}", response.getStatusCode());
+
+            Map<String, Object> responseBody = response.getBody();
+            Integer code = (Integer) responseBody.get("code");
+
+            if (code != null && code == 200) {
+                Boolean data = (Boolean) responseBody.get("data");
+                log.info("✅ 关注用户成功");
+                log.info("   - 关注状态: {}", data);
+            } else {
+                String msg = (String) responseBody.get("msg");
+                log.warn("⚠️ 关注用户提示: {}", msg);
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 关注用户异常", e);
+            Assertions.fail("关注用户异常: " + e.getMessage());
+        }
+    }
+
+    // ============================================================
+    // 测试14: 用户B获取动态详情验证用户信息
+    // ============================================================
+    @Test
+    @Order(14)
+    @DisplayName("[测试14] 用户B获取动态详情验证用户信息")
+    void test14_getFeedDetailWithUserInfo() {
+        log.info("\n");
+        log.info("┌─────────────────────────────────────────────────────────┐");
+        log.info("│ [测试14] 用户B获取动态详情验证用户信息                        │");
+        log.info("└─────────────────────────────────────────────────────────┘");
+
+        try {
+            String url = GATEWAY_URL + "/xypai-content/api/v1/content/detail/" + testFeedId;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(authTokenUserB);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+
+            log.info("   - 状态码: {}", response.getStatusCode());
+
+            Map<String, Object> responseBody = response.getBody();
+            Integer code = (Integer) responseBody.get("code");
+
+            if (code != null && code == 200) {
+                Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
+                log.info("✅ 获取动态详情成功(验证用户信息)");
+
+                Map<String, Object> userInfo = (Map<String, Object>) data.get("userInfo");
+                if (userInfo != null) {
+                    log.info("   - 作者昵称: {}", userInfo.get("nickname"));
+                    log.info("   - 作者头像: {}", userInfo.get("avatar"));
+                    log.info("   - 用户等级: {}", userInfo.get("level"));
+                    log.info("   - 等级名称: {}", userInfo.get("levelName"));
+                    log.info("   - 是否已关注: {}", userInfo.get("isFollowed"));
+                    log.info("   - 是否实名认证: {}", userInfo.get("isRealVerified"));
+                    log.info("   - 是否大神认证: {}", userInfo.get("isGodVerified"));
+                    log.info("   - 是否VIP: {}", userInfo.get("isVip"));
+
+                    // 验证新增的字段
+                    Assertions.assertNotNull(userInfo.get("level"), "用户等级字段不能为空");
+                    Assertions.assertNotNull(userInfo.get("levelName"), "等级名称字段不能为空");
+                }
+            } else {
+                String msg = (String) responseBody.get("msg");
+                log.error("❌ 获取动态详情失败: {}", msg);
+                Assertions.fail("获取动态详情失败: " + msg);
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 获取动态详情异常", e);
+            Assertions.fail("获取动态详情异常: " + e.getMessage());
+        }
+    }
+
+    // ============================================================
+    // 测试15: 用户B取消关注用户A
+    // ============================================================
+    @Test
+    @Order(15)
+    @DisplayName("[测试15] 用户B取消关注用户A")
+    void test15_unfollowUser() {
+        log.info("\n");
+        log.info("┌─────────────────────────────────────────────────────────┐");
+        log.info("│ [测试15] 用户B取消关注用户A                                 │");
+        log.info("└─────────────────────────────────────────────────────────┘");
+
+        try {
+            String url = GATEWAY_URL + "/xypai-content/api/v1/interaction/follow/" + userIdA;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(authTokenUserB);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, Map.class);
+
+            log.info("   - 状态码: {}", response.getStatusCode());
+
+            Map<String, Object> responseBody = response.getBody();
+            Integer code = (Integer) responseBody.get("code");
+
+            if (code != null && code == 200) {
+                Boolean data = (Boolean) responseBody.get("data");
+                log.info("✅ 取消关注成功");
+                log.info("   - 取消关注状态: {}", data);
+            } else {
+                String msg = (String) responseBody.get("msg");
+                log.warn("⚠️ 取消关注提示: {}", msg);
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 取消关注异常", e);
+            Assertions.fail("取消关注异常: " + e.getMessage());
+        }
+    }
+
+    // ============================================================
+    // 测试16: 用户A删除自己的评论
+    // ============================================================
+    @Test
+    @Order(16)
+    @DisplayName("[测试16] 用户A删除自己的评论")
+    void test16_deleteComment() {
+        log.info("\n");
+        log.info("┌─────────────────────────────────────────────────────────┐");
+        log.info("│ [测试16] 用户A删除自己的评论                               │");
         log.info("└─────────────────────────────────────────────────────────┘");
 
         try {
@@ -804,15 +950,15 @@ public class Page03_FeedDetailTest {
     }
 
     // ============================================================
-    // 测试14: 用户A删除自己的动态
+    // 测试17: 用户A删除自己的动态
     // ============================================================
     @Test
-    @Order(14)
-    @DisplayName("[测试14] 用户A删除自己的动态")
-    void test14_deleteFeed() {
+    @Order(17)
+    @DisplayName("[测试17] 用户A删除自己的动态")
+    void test17_deleteFeed() {
         log.info("\n");
         log.info("┌─────────────────────────────────────────────────────────┐");
-        log.info("│ [测试14] 用户A删除自己的动态                               │");
+        log.info("│ [测试17] 用户A删除自己的动态                               │");
         log.info("└─────────────────────────────────────────────────────────┘");
 
         try {

@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
+import org.dromara.appuser.api.RemoteAppUserService;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.ratelimiter.annotation.RateLimiter;
 import org.dromara.common.ratelimiter.enums.LimitType;
@@ -32,10 +34,16 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/interaction")
 @RequiredArgsConstructor
-@Tag(name = "互动管理", description = "点赞、收藏、分享相关接口")
+@Tag(name = "互动管理", description = "点赞、收藏、分享、关注相关接口")
 public class InteractionController extends BaseController {
 
     private final IInteractionService interactionService;
+
+    /**
+     * 远程用户服务（Dubbo RPC）
+     */
+    @DubboReference(check = false)
+    private RemoteAppUserService remoteAppUserService;
 
     /**
      * 点赞/取消点赞
@@ -100,6 +108,87 @@ public class InteractionController extends BaseController {
         Long userId = StpUtil.getLoginIdAsLong();
         Page<MyCollectionVO> page = interactionService.getMyCollectionList(queryDTO, userId);
         return R.ok(page);
+    }
+
+    // ==================== 关注相关API ====================
+
+    /**
+     * 关注用户
+     */
+    @Operation(summary = "关注用户", description = "关注指定用户")
+    @PostMapping("/follow/{targetUserId}")
+    @RateLimiter(count = 30, time = 60, limitType = LimitType.USER)
+    public R<Boolean> followUser(
+        @Parameter(description = "目标用户ID", required = true) @PathVariable Long targetUserId
+    ) {
+        StpUtil.checkLogin();
+        Long userId = StpUtil.getLoginIdAsLong();
+
+        if (userId.equals(targetUserId)) {
+            return R.fail("不能关注自己");
+        }
+
+        try {
+            boolean success = remoteAppUserService.followUser(userId, targetUserId);
+            if (success) {
+                return R.ok("关注成功", true);
+            } else {
+                return R.ok("已关注过该用户", false);
+            }
+        } catch (Exception e) {
+            log.error("关注用户失败: userId={}, targetUserId={}, error={}", userId, targetUserId, e.getMessage());
+            return R.fail("关注失败，请稍后重试");
+        }
+    }
+
+    /**
+     * 取消关注用户
+     */
+    @Operation(summary = "取消关注用户", description = "取消关注指定用户")
+    @DeleteMapping("/follow/{targetUserId}")
+    @RateLimiter(count = 30, time = 60, limitType = LimitType.USER)
+    public R<Boolean> unfollowUser(
+        @Parameter(description = "目标用户ID", required = true) @PathVariable Long targetUserId
+    ) {
+        StpUtil.checkLogin();
+        Long userId = StpUtil.getLoginIdAsLong();
+
+        if (userId.equals(targetUserId)) {
+            return R.fail("不能取消关注自己");
+        }
+
+        try {
+            boolean success = remoteAppUserService.unfollowUser(userId, targetUserId);
+            if (success) {
+                return R.ok("取消关注成功", true);
+            } else {
+                return R.ok("您未关注该用户", false);
+            }
+        } catch (Exception e) {
+            log.error("取消关注失败: userId={}, targetUserId={}, error={}", userId, targetUserId, e.getMessage());
+            return R.fail("取消关注失败，请稍后重试");
+        }
+    }
+
+    /**
+     * 检查是否已关注
+     */
+    @Operation(summary = "检查是否已关注", description = "检查当前用户是否已关注指定用户")
+    @GetMapping("/follow/check/{targetUserId}")
+    @RateLimiter(count = 100, time = 60, limitType = LimitType.USER)
+    public R<Boolean> checkIsFollowed(
+        @Parameter(description = "目标用户ID", required = true) @PathVariable Long targetUserId
+    ) {
+        StpUtil.checkLogin();
+        Long userId = StpUtil.getLoginIdAsLong();
+
+        try {
+            boolean isFollowed = remoteAppUserService.checkIsFollowed(userId, targetUserId);
+            return R.ok(isFollowed);
+        } catch (Exception e) {
+            log.error("检查关注状态失败: userId={}, targetUserId={}, error={}", userId, targetUserId, e.getMessage());
+            return R.ok(false);
+        }
     }
 
 }

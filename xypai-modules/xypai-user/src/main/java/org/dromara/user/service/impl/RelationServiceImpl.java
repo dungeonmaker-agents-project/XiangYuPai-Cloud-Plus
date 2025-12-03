@@ -23,6 +23,8 @@ import org.dromara.user.service.IRelationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -113,18 +115,27 @@ public class RelationServiceImpl extends ServiceImpl<UserRelationMapper, UserRel
 
         Page<User> userPage = userMapper.selectPage(page, wrapper);
 
-        // Build VO list
+        // Build VO list with complete fields
         List<UserRelationVo> voList = new ArrayList<>();
         for (User user : userPage.getRecords()) {
-            String followStatus = getFollowStatus(userId, user.getUserId());
+            String relationStatus = getRelationStatus(userId, user.getUserId());
+            boolean isMutual = "mutual".equals(relationStatus);
+            boolean isFollowing = "following".equals(relationStatus) || isMutual;
+
             UserRelationVo vo = UserRelationVo.builder()
                 .userId(user.getUserId())
                 .nickname(user.getNickname())
                 .avatar(user.getAvatar())
                 .gender(user.getGender())
+                .age(calculateAge(user.getBirthday()))
+                .isVerified(user.getIsRealVerified())
+                .signature(user.getBio())
                 .bio(user.getBio())
                 .isOnline(user.getIsOnline())
-                .followStatus(followStatus)
+                .relationStatus(relationStatus)
+                .followStatus(relationStatus)
+                .isFollowing(isFollowing)
+                .isMutualFollow(isMutual)
                 .build();
             voList.add(vo);
         }
@@ -151,17 +162,26 @@ public class RelationServiceImpl extends ServiceImpl<UserRelationMapper, UserRel
 
         Page<User> userPage = userMapper.selectPage(page, wrapper);
 
-        // Build VO list
+        // Build VO list with complete fields
         List<UserRelationVo> voList = new ArrayList<>();
         for (User user : userPage.getRecords()) {
+            String relationStatus = getRelationStatus(userId, user.getUserId());
+            boolean isMutual = "mutual".equals(relationStatus);
+
             UserRelationVo vo = UserRelationVo.builder()
                 .userId(user.getUserId())
                 .nickname(user.getNickname())
                 .avatar(user.getAvatar())
                 .gender(user.getGender())
+                .age(calculateAge(user.getBirthday()))
+                .isVerified(user.getIsRealVerified())
+                .signature(user.getBio())
                 .bio(user.getBio())
                 .isOnline(user.getIsOnline())
-                .followStatus("following")
+                .relationStatus(relationStatus)
+                .followStatus(relationStatus)
+                .isFollowing(true)  // 关注列表中都是已关注
+                .isMutualFollow(isMutual)
                 .build();
             voList.add(vo);
         }
@@ -229,16 +249,44 @@ public class RelationServiceImpl extends ServiceImpl<UserRelationMapper, UserRel
 
     @Override
     public String getFollowStatus(Long followerId, Long followingId) {
-        boolean isFollowing = userRelationMapper.selectRelation(followerId, followingId) != null;
-        boolean isFollowedBy = userRelationMapper.selectRelation(followingId, followerId) != null;
+        return getRelationStatus(followerId, followingId);
+    }
 
-        if (isFollowing && isFollowedBy) {
-            return "mutual";
-        } else if (isFollowing) {
-            return "following";
+    /**
+     * 获取关系状态 (支持四种状态)
+     * Get relation status between two users
+     *
+     * @param currentUserId 当前用户ID
+     * @param targetUserId 目标用户ID
+     * @return 关系状态: none, following, followed, mutual
+     */
+    private String getRelationStatus(Long currentUserId, Long targetUserId) {
+        boolean iFollowTarget = userRelationMapper.selectRelation(currentUserId, targetUserId) != null;
+        boolean targetFollowsMe = userRelationMapper.selectRelation(targetUserId, currentUserId) != null;
+
+        if (iFollowTarget && targetFollowsMe) {
+            return "mutual";       // 互相关注
+        } else if (iFollowTarget) {
+            return "following";    // 我关注对方
+        } else if (targetFollowsMe) {
+            return "followed";     // 对方关注我（我未关注对方）
         } else {
-            return "none";
+            return "none";         // 未关注
         }
+    }
+
+    /**
+     * 从生日计算年龄
+     * Calculate age from birthday
+     *
+     * @param birthday 生日
+     * @return 年龄，如果生日为空返回null
+     */
+    private Integer calculateAge(LocalDate birthday) {
+        if (birthday == null) {
+            return null;
+        }
+        return Period.between(birthday, LocalDate.now()).getYears();
     }
 
     @Override

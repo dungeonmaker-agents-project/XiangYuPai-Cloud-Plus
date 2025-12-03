@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
+import org.dromara.appuser.api.RemoteAppUserService;
+import org.dromara.appuser.api.domain.vo.RemoteAppUserVo;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.redis.utils.RedisUtils;
 import org.dromara.content.domain.dto.CommentListQueryDTO;
@@ -13,17 +16,16 @@ import org.dromara.content.domain.entity.Feed;
 import org.dromara.content.domain.vo.CommentListVO;
 import org.dromara.content.mapper.CommentMapper;
 import org.dromara.content.mapper.FeedMapper;
+import org.dromara.content.mapper.LikeMapper;
 import org.dromara.content.service.ICommentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 评论服务实现
+ * 评论服务实现（仅支持一级评论）
  *
  * @author XiangYuPai
  */
@@ -34,6 +36,10 @@ public class CommentServiceImpl implements ICommentService {
 
     private final CommentMapper commentMapper;
     private final FeedMapper feedMapper;
+    private final LikeMapper likeMapper;
+
+    @DubboReference
+    private RemoteAppUserService remoteAppUserService;
 
     private static final String CACHE_KEY_COMMENT_LIST = "comment:list:";
 
@@ -45,11 +51,11 @@ public class CommentServiceImpl implements ICommentService {
             throw new ServiceException("动态不存在");
         }
 
-        // 2. 查询一级评论
+        // 2. 查询评论（只有一级评论）
+        // 注意: @TableLogic 注解会自动添加 deleted = 0 条件
         Page<Comment> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Comment::getFeedId, queryDTO.getFeedId())
-               .isNull(Comment::getParentId);
+        wrapper.eq(Comment::getFeedId, queryDTO.getFeedId());
 
         // 3. 排序
         String sortType = queryDTO.getSortType() != null ? queryDTO.getSortType() : "time";
@@ -65,12 +71,48 @@ public class CommentServiceImpl implements ICommentService {
 
         Page<Comment> commentPage = commentMapper.selectPage(page, wrapper);
 
-        // 4. 转换为VO并查询二级回复
+        // 4. 收集所有评论者的用户ID
+        Set<Long> userIds = commentPage.getRecords().stream()
+            .map(Comment::getUserId)
+            .collect(Collectors.toSet());
+
+        // 5. 批量查询用户信息
+        Map<Long, RemoteAppUserVo> userInfoMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            try {
+                userInfoMap = remoteAppUserService.batchGetUserBasicInfo(
+                    new ArrayList<>(userIds), userId);
+                if (userInfoMap == null) {
+                    userInfoMap = new HashMap<>();
+                }
+            } catch (Exception e) {
+                log.warn("批量获取用户信息失败: {}", e.getMessage());
+            }
+        }
+
+        // 6. 查询当前用户对评论的点赞状态
+        Set<Long> likedCommentIds = new HashSet<>();
+        if (userId != null) {
+            List<Long> commentIds = commentPage.getRecords().stream()
+                .map(Comment::getId)
+                .collect(Collectors.toList());
+
+            if (!commentIds.isEmpty()) {
+                Set<Long> result = likeMapper.findLikedTargetIds(userId, "comment", commentIds);
+                if (result != null) {
+                    likedCommentIds = result;
+                }
+            }
+        }
+
+        // 7. 转换为VO
+        final Set<Long> finalLikedCommentIds = likedCommentIds;
+        final Map<Long, RemoteAppUserVo> finalUserInfoMap = userInfoMap;
         List<CommentListVO> voList = commentPage.getRecords().stream()
-            .map(comment -> convertToVO(comment, userId))
+            .map(comment -> convertToVO(comment, userId, finalUserInfoMap, finalLikedCommentIds))
             .collect(Collectors.toList());
 
-        // 5. 构建返回结果
+        // 8. 构建返回结果
         Page<CommentListVO> resultPage = new Page<>(commentPage.getCurrent(), commentPage.getSize());
         resultPage.setRecords(voList);
         resultPage.setTotal(commentPage.getTotal());
@@ -87,45 +129,38 @@ public class CommentServiceImpl implements ICommentService {
             throw new ServiceException("动态不存在");
         }
 
-        // 2. 如果是二级回复,验证父评论存在
-        if (publishDTO.getParentId() != null) {
-            Comment parentComment = commentMapper.selectById(publishDTO.getParentId());
-            if (parentComment == null || parentComment.getDeleted() == 1) {
-                throw new ServiceException("父评论不存在");
-            }
-        }
-
-        // 3. 创建评论
+        // 2. 创建评论（只支持一级评论）
         Comment comment = Comment.builder()
             .feedId(publishDTO.getFeedId())
             .userId(userId)
             .content(publishDTO.getContent())
-            .parentId(publishDTO.getParentId())
-            .replyToUserId(publishDTO.getReplyToUserId())
             .isTop(0)
             .build();
 
         commentMapper.insert(comment);
 
-        // 4. 更新动态评论数
+        // 3. 更新动态评论数
         feed.setCommentCount(feed.getCommentCount() + 1);
         feedMapper.updateById(feed);
 
-        // 5. 如果是二级回复,更新父评论回复数
-        if (publishDTO.getParentId() != null) {
-            Comment parentComment = commentMapper.selectById(publishDTO.getParentId());
-            parentComment.setReplyCount(parentComment.getReplyCount() + 1);
-            commentMapper.updateById(parentComment);
-        }
-
-        // 6. 清除缓存
+        // 4. 清除缓存
         RedisUtils.deleteObject(CACHE_KEY_COMMENT_LIST + publishDTO.getFeedId());
 
         log.info("用户 {} 发布评论: {}", userId, comment.getId());
 
-        // 7. TODO: 异步发送通知
+        // 5. 构建返回的VO，包含用户信息
+        Map<Long, RemoteAppUserVo> userInfoMap = new HashMap<>();
+        try {
+            userInfoMap = remoteAppUserService.batchGetUserBasicInfo(
+                Collections.singletonList(userId), userId);
+            if (userInfoMap == null) {
+                userInfoMap = new HashMap<>();
+            }
+        } catch (Exception e) {
+            log.warn("获取用户信息失败: {}", e.getMessage());
+        }
 
-        return convertToVO(comment, userId);
+        return convertToVO(comment, userId, userInfoMap, new HashSet<>());
     }
 
     @Override
@@ -151,28 +186,7 @@ public class CommentServiceImpl implements ICommentService {
         feed.setCommentCount(Math.max(0, feed.getCommentCount() - 1));
         feedMapper.updateById(feed);
 
-        // 5. 如果是一级评论,删除所有二级回复
-        if (comment.getParentId() == null) {
-            LambdaQueryWrapper<Comment> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(Comment::getParentId, commentId);
-            List<Comment> replies = commentMapper.selectList(wrapper);
-
-            for (Comment reply : replies) {
-                reply.setDeleted(1);
-                commentMapper.updateById(reply);
-                feed.setCommentCount(Math.max(0, feed.getCommentCount() - 1));
-            }
-            feedMapper.updateById(feed);
-        } else {
-            // 更新父评论回复数
-            Comment parentComment = commentMapper.selectById(comment.getParentId());
-            if (parentComment != null) {
-                parentComment.setReplyCount(Math.max(0, parentComment.getReplyCount() - 1));
-                commentMapper.updateById(parentComment);
-            }
-        }
-
-        // 6. 清除缓存
+        // 5. 清除缓存
         RedisUtils.deleteObject(CACHE_KEY_COMMENT_LIST + comment.getFeedId());
 
         log.info("用户 {} 删除评论: {}", userId, commentId);
@@ -181,58 +195,40 @@ public class CommentServiceImpl implements ICommentService {
     /**
      * 转换为VO
      */
-    private CommentListVO convertToVO(Comment comment, Long userId) {
+    private CommentListVO convertToVO(Comment comment, Long userId,
+                                       Map<Long, RemoteAppUserVo> userInfoMap,
+                                       Set<Long> likedCommentIds) {
         CommentListVO vo = CommentListVO.builder()
             .id(comment.getId())
             .feedId(comment.getFeedId())
             .userId(comment.getUserId())
             .content(comment.getContent())
             .likeCount(comment.getLikeCount())
-            .replyCount(comment.getReplyCount())
             .isTop(comment.getIsTop() == 1)
-            .isLiked(false)
-            .canDelete(comment.getUserId().equals(userId))
+            .isLiked(likedCommentIds.contains(comment.getId()))
+            .canDelete(userId != null && comment.getUserId().equals(userId))
             .createdAt(comment.getCreatedAt())
             .build();
 
-        // 查询前3条二级回复
-        if (comment.getParentId() == null && comment.getReplyCount() > 0) {
-            LambdaQueryWrapper<Comment> replyWrapper = new LambdaQueryWrapper<>();
-            replyWrapper.eq(Comment::getParentId, comment.getId())
-                       .orderByDesc(Comment::getCreatedAt)
-                       .last("LIMIT 3");
-            List<Comment> replies = commentMapper.selectList(replyWrapper);
-
-            List<CommentListVO.ReplyVO> replyVOs = replies.stream()
-                .map(this::convertToReplyVO)
-                .collect(Collectors.toList());
-
-            vo.setReplies(replyVOs);
-            vo.setTotalReplies(comment.getReplyCount());
-            vo.setHasMoreReplies(comment.getReplyCount() > 3);
+        // 填充用户信息
+        RemoteAppUserVo userVo = userInfoMap.get(comment.getUserId());
+        if (userVo != null) {
+            vo.setUserInfo(CommentListVO.UserInfoVO.builder()
+                .id(userVo.getUserId())
+                .nickname(userVo.getNickname())
+                .avatar(userVo.getAvatar())
+                .level(userVo.getLevel())
+                .levelName(userVo.getLevelName())
+                .build());
         } else {
-            vo.setReplies(new ArrayList<>());
-            vo.setTotalReplies(0);
-            vo.setHasMoreReplies(false);
+            vo.setUserInfo(CommentListVO.UserInfoVO.builder()
+                .id(comment.getUserId())
+                .nickname("用户" + comment.getUserId())
+                .avatar("")
+                .level(1)
+                .levelName("青铜")
+                .build());
         }
-
-        // TODO: 填充userInfo
-
-        return vo;
-    }
-
-    /**
-     * 转换为回复VO
-     */
-    private CommentListVO.ReplyVO convertToReplyVO(Comment reply) {
-        CommentListVO.ReplyVO vo = CommentListVO.ReplyVO.builder()
-            .id(reply.getId())
-            .content(reply.getContent())
-            .replyToUserNickname("") // TODO: 从UserService获取
-            .createdAt(reply.getCreatedAt())
-            .build();
-
-        // TODO: 填充userInfo
 
         return vo;
     }
@@ -257,16 +253,11 @@ public class CommentServiceImpl implements ICommentService {
             return false;
         }
 
-        // 3. 只有一级评论可以置顶
-        if (comment.getParentId() != null) {
-            throw new ServiceException("只有一级评论可以置顶");
-        }
-
-        // 4. 更新置顶状态
+        // 3. 更新置顶状态
         comment.setIsTop(pin ? 1 : 0);
         commentMapper.updateById(comment);
 
-        // 5. 清除缓存
+        // 4. 清除缓存
         RedisUtils.deleteObject(CACHE_KEY_COMMENT_LIST + comment.getFeedId());
 
         log.info("用户 {} {}评论: {}", userId, pin ? "置顶" : "取消置顶", commentId);

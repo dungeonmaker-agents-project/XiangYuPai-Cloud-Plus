@@ -43,6 +43,11 @@ public class Feed implements Serializable {
     private Integer type;
 
     /**
+     * 媒体类型: image/video
+     */
+    private String mediaType;
+
+    /**
      * 标题(0-50字符)
      */
     private String title;
@@ -56,6 +61,26 @@ public class Feed implements Serializable {
      * 封面图
      */
     private String coverImage;
+
+    /**
+     * 宽高比 (width/height)
+     */
+    private BigDecimal aspectRatio;
+
+    /**
+     * 视频时长(秒)
+     */
+    private Integer duration;
+
+    /**
+     * 媒体宽度(px)
+     */
+    private Integer mediaWidth;
+
+    /**
+     * 媒体高度(px)
+     */
+    private Integer mediaHeight;
 
     /**
      * 地点名称
@@ -131,7 +156,8 @@ public class Feed implements Serializable {
      * 删除标记: 0=未删除,1=已删除
      */
     @TableLogic
-    private Integer deleted;
+    @Builder.Default
+    private Integer deleted = 0;
 
     /**
      * 创建时间（数据库自动填充）

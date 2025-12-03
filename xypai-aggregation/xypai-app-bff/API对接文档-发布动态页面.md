@@ -742,3 +742,157 @@ mvn test -Dtest=Page*Test
 **最后更新**: 2025-11-29
 
 **测试文件**: `xypai-aggregation/xypai-app-bff/src/test/java/org/dromara/appbff/pages/Page02_PublishFeedTest.java`
+
+---
+
+## 发现页面 - 有技能用户接口
+
+### 获取有技能用户列表
+
+获取所有有上架技能的用户列表，支持分页和筛选。
+
+**请求**
+
+```http
+GET /xypai-app-bff/api/discovery/skilled-users
+Authorization: Bearer <token>
+```
+
+**查询参数**
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| pageNum | integer | 否 | 1 | 页码（从1开始） |
+| pageSize | integer | 否 | 20 | 每页数量 |
+| gender | string | 否 | all | 性别筛选: all(不限), male(男), female(女) |
+| sortBy | string | 否 | smart_recommend | 排序方式 |
+| cityCode | string | 否 | - | 城市代码 |
+| districtCode | string | 否 | - | 区县代码 |
+
+**排序方式说明**
+
+| 值 | 说明 |
+|----|------|
+| smart_recommend | 智能推荐（在线优先+距离近+价格低） |
+| price_asc | 价格从低到高 |
+| price_desc | 价格从高到低 |
+| distance_asc | 距离最近 |
+
+**响应示例**
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "total": 5,
+    "hasMore": false,
+    "filters": {
+      "sortOptions": [
+        { "value": "smart_recommend", "label": "智能推荐" },
+        { "value": "price_asc", "label": "价格从低到高" },
+        { "value": "price_desc", "label": "价格从高到低" },
+        { "value": "distance_asc", "label": "距离最近" }
+      ],
+      "genderOptions": [
+        { "value": "all", "label": "不限性别" },
+        { "value": "male", "label": "男" },
+        { "value": "female", "label": "女" }
+      ],
+      "languageOptions": [
+        { "value": "all", "label": "语言(不限)" },
+        { "value": "mandarin", "label": "普通话" },
+        { "value": "cantonese", "label": "粤语" }
+      ]
+    },
+    "list": [
+      {
+        "userId": 1,
+        "avatar": "https://randomuser.me/api/portraits/men/32.jpg",
+        "nickname": "小明同学",
+        "gender": "male",
+        "age": 27,
+        "distance": 3200,
+        "distanceText": "3.2km",
+        "tags": [
+          { "text": "可线上", "type": "feature", "color": "#4CAF50" },
+          { "text": "限时7折", "type": "price", "color": "#FF5722" },
+          { "text": "王者荣耀陪玩", "type": "skill", "color": "#2196F3" }
+        ],
+        "description": "热爱游戏，王者荣耀王者段位",
+        "price": {
+          "amount": 21,
+          "unit": "per_order",
+          "displayText": "21 金币/单",
+          "originalPrice": 30
+        },
+        "promotionTag": "限时特价",
+        "isOnline": true,
+        "skillLevel": "大神"
+      }
+    ]
+  }
+}
+```
+
+**字段说明**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| total | integer | 总记录数 |
+| hasMore | boolean | 是否有更多数据 |
+| filters | object | 筛选选项配置 |
+| list | array | 用户列表 |
+| list[].userId | long | 用户ID |
+| list[].avatar | string | 头像URL |
+| list[].nickname | string | 昵称 |
+| list[].gender | string | 性别: male/female |
+| list[].age | integer | 年龄 |
+| list[].distance | integer | 距离（米） |
+| list[].distanceText | string | 距离显示文本 |
+| list[].tags | array | 标签列表 |
+| list[].description | string | 描述文字 |
+| list[].price | object | 价格信息 |
+| list[].promotionTag | string | 促销标签 |
+| list[].isOnline | boolean | 是否在线 |
+| list[].skillLevel | string | 技能等级 |
+
+---
+
+### 前端调用示例
+
+```typescript
+import { discoveryApi } from '@/services/api/discoveryApi';
+
+// 获取有技能用户列表（默认参数）
+const result = await discoveryApi.getSkilledUsers();
+
+// 获取女性用户列表
+const femaleUsers = await discoveryApi.getSkilledUsers({
+  gender: 'female',
+  pageSize: 10
+});
+
+// 按价格排序
+const sortedUsers = await discoveryApi.getSkilledUsers({
+  sortBy: 'price_asc'
+});
+
+// 分页加载更多
+const moreUsers = await discoveryApi.getSkilledUsers({
+  pageNum: 2,
+  pageSize: 20
+});
+```
+
+---
+
+### 测试场景
+
+**测试文件**: `xypai-aggregation/xypai-app-bff/src/test/java/org/dromara/appbff/DiscoverySkilledUsersTest.java`
+
+```bash
+# 运行测试
+cd xypai-aggregation/xypai-app-bff
+mvn test -Dtest=DiscoverySkilledUsersTest
+```

@@ -5,18 +5,25 @@ import lombok.Data;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 创建线下技能DTO
  * Create Offline Skill DTO
  *
+ * 对应UI文档: 添加技能页_结构文档.md
+ *
  * @author XiangYuPai
  * @since 2025-11-14
+ * @updated 2025-12-02 - 添加skillConfigId和activityTime字段
  */
 @Data
 @Schema(description = "Create offline skill request")
 public class OfflineSkillCreateDto {
+
+    @Schema(description = "技能配置ID（关联skill_config表）")
+    private String skillConfigId;
 
     @Schema(description = "Skill type")
     private Integer skillType;
@@ -55,6 +62,9 @@ public class OfflineSkillCreateDto {
     @Schema(description = "Price per service")
     private BigDecimal pricePerService;
 
+    @Schema(description = "活动时间（线下技能预约时间）")
+    private LocalDateTime activityTime;
+
     @Schema(description = "Service location (address string)")
     private String serviceLocation;
 
@@ -64,12 +74,9 @@ public class OfflineSkillCreateDto {
     @Schema(description = "Longitude")
     private BigDecimal longitude;
 
-    @NotNull(message = "服务地点不能为空")
     @Schema(description = "Service location")
     private LocationDto location;
 
-    @NotNull(message = "可用时间不能为空")
-    @Size(min = 1, message = "至少设置一个可用时间段")
     @Schema(description = "Available times")
     private List<AvailableTimeDto> availableTimes;
 

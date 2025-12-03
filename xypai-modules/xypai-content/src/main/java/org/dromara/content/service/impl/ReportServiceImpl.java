@@ -8,12 +8,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.content.domain.dto.ReportDTO;
 import org.dromara.content.domain.entity.Report;
+import org.dromara.content.domain.vo.ReportTypeVO;
 import org.dromara.content.domain.vo.ReportVO;
 import org.dromara.content.mapper.ReportMapper;
 import org.dromara.content.service.IReportService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,6 +30,25 @@ public class ReportServiceImpl implements IReportService {
 
     private final ReportMapper reportMapper;
     private final ObjectMapper objectMapper;
+
+    /**
+     * 举报类型列表（按文档要求的顺序）
+     */
+    private static final List<ReportTypeVO> REPORT_TYPES = Arrays.asList(
+        ReportTypeVO.builder().key("insult").label("辱骂引战").build(),
+        ReportTypeVO.builder().key("porn").label("色情低俗").build(),
+        ReportTypeVO.builder().key("fraud").label("诈骗").build(),
+        ReportTypeVO.builder().key("illegal").label("违法犯罪").build(),
+        ReportTypeVO.builder().key("fake").label("不实信息").build(),
+        ReportTypeVO.builder().key("minor").label("未成年人相关").build(),
+        ReportTypeVO.builder().key("uncomfortable").label("内容引人不适").build(),
+        ReportTypeVO.builder().key("other").label("其他").build()
+    );
+
+    @Override
+    public List<ReportTypeVO> getReportTypes() {
+        return REPORT_TYPES;
+    }
 
     @Override
     public ReportVO submitReport(ReportDTO reportDTO, Long userId) {

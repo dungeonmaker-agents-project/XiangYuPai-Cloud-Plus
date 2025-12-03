@@ -46,6 +46,14 @@ public class FeedListQueryDTO implements Serializable {
     @Schema(description = "搜索半径(km,默认5)", example = "5")
     private Integer radius;
 
+    @Schema(description = "内容类型: 1=动态, 2=活动, 3=技能 (不传则返回所有类型)", example = "3")
+    @Min(value = 1, message = "内容类型最小为1")
+    @Max(value = 3, message = "内容类型最大为3")
+    private Integer type;
+
+    @Schema(description = "排序方式: distance=距离最近, followed=关注的用户, likes=点赞最多 (默认likes)", example = "likes")
+    private String sortBy;
+
     /**
      * 获取实际页码 (兼容 page 和 pageNum 两种参数名)
      */

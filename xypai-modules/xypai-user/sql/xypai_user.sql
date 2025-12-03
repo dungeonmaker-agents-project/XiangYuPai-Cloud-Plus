@@ -2,10 +2,13 @@
 -- XiangYuPai User Service - Complete Database Script
 -- ========================================
 -- Database: xypai_user
--- Version: 1.0.1
+-- Version: 1.0.4
 -- Created: 2025-11-14
--- Updated: 2025-11-18
+-- Updated: 2025-12-02
 -- Description: Complete database setup with fresh schema
+--              Added: user level system (等级系统), verification badges (认证徽章), VIP status
+--              Added: wechat unlock tables (微信解锁记录表)
+--              Added: skill_config tables (技能配置表，段位配置表) - 对应添加技能页UI文档
 --
 -- This script will:
 -- 1. DROP existing xypai_user database (⚠️ WARNING: All data will be lost!)
@@ -60,6 +63,16 @@ CREATE TABLE `users` (
     -- Privacy Settings
     `privacy_profile`   TINYINT(1)      DEFAULT 1 COMMENT '资料可见性（1-公开，2-仅粉丝，3-私密）',
 
+    -- Level System (等级系统)
+    `level`             INT(11)         NOT NULL DEFAULT 1 COMMENT '用户等级（1-青铜，2-白银，3-黄金，4-铂金，5-钻石，6-大师，7-王者）',
+    `level_exp`         INT(11)         NOT NULL DEFAULT 0 COMMENT '等级经验值',
+
+    -- Verification & VIP (认证与VIP)
+    `is_real_verified`  TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否实名认证（0-否，1-是）',
+    `is_god_verified`   TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否大神认证（0-否，1-是）',
+    `is_vip`            TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否VIP（0-否，1-是）',
+    `vip_expire_time`   DATETIME        DEFAULT NULL COMMENT 'VIP过期时间',
+
     -- Status
     `is_online`         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否在线（0-否，1-是）',
     `last_login_at`     DATETIME        DEFAULT NULL COMMENT '最后登录时间',
@@ -76,7 +89,9 @@ CREATE TABLE `users` (
     KEY `idx_nickname` (`nickname`),
     KEY `idx_wechat` (`wechat`),
     KEY `idx_latitude_longitude` (`latitude`, `longitude`),
-    KEY `idx_deleted` (`deleted`)
+    KEY `idx_deleted` (`deleted`),
+    KEY `idx_level` (`level`),
+    KEY `idx_is_vip` (`is_vip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户基本信息表';
 
 
@@ -215,6 +230,9 @@ CREATE TABLE `skills` (
     -- Owner
     `user_id`           BIGINT(20)      NOT NULL COMMENT '用户ID（技能拥有者）',
 
+    -- Skill Config Reference (关联技能配置表)
+    `skill_config_id`   BIGINT(20)      DEFAULT NULL COMMENT '技能配置ID（关联skill_config表）',
+
     -- Basic Info
     `skill_name`        VARCHAR(100)    NOT NULL COMMENT '技能名称（2-50字符）',
     `skill_type`        VARCHAR(20)     NOT NULL COMMENT '技能类型: online, offline',
@@ -236,11 +254,13 @@ CREATE TABLE `skills` (
     -- Online Skill Specific Fields
     `game_name`         VARCHAR(100)    DEFAULT NULL COMMENT '游戏名称（线上技能专用）',
     `game_rank`         VARCHAR(50)     DEFAULT NULL COMMENT '游戏段位（线上技能专用）',
+    `server`            VARCHAR(20)     DEFAULT NULL COMMENT '服务区: QQ区, 微信区（线上技能专用）',
     `service_hours`     DECIMAL(4,2)    DEFAULT NULL COMMENT '服务时长（小时/局，线上技能专用）',
 
     -- Offline Skill Specific Fields (location required for offline skills, enforced in application)
     `service_type`      VARCHAR(100)    DEFAULT NULL COMMENT '服务类型（线下技能专用）',
     `service_location`  VARCHAR(500)    DEFAULT NULL COMMENT '服务地点（线下技能专用）',
+    `activity_time`     DATETIME        DEFAULT NULL COMMENT '活动时间（线下技能预约时间）',
     `location`          POINT SRID 4326 DEFAULT NULL COMMENT '地理位置（线下技能时必填，应用层校验）',
     `latitude`          DECIMAL(10,7)   DEFAULT NULL COMMENT '纬度（线下技能时必填）',
     `longitude`         DECIMAL(10,7)   DEFAULT NULL COMMENT '经度（线下技能时必填）',
@@ -253,9 +273,11 @@ CREATE TABLE `skills` (
 
     PRIMARY KEY (`skill_id`),
     KEY `idx_user_id` (`user_id`),
+    KEY `idx_skill_config_id` (`skill_config_id`),
     KEY `idx_skill_type` (`skill_type`),
     KEY `idx_is_online` (`is_online`),
     KEY `idx_game_name` (`game_name`),
+    KEY `idx_server` (`server`),
     KEY `idx_service_type` (`service_type`),
     KEY `idx_latitude_longitude` (`latitude`, `longitude`),
     KEY `idx_created_at` (`created_at`),
@@ -348,6 +370,124 @@ CREATE TABLE `skill_available_times` (
 
 
 -- ========================================
+-- 10. wechat_unlocks - 微信解锁记录表
+-- ========================================
+CREATE TABLE `wechat_unlocks` (
+    -- Primary Key
+    `unlock_id`         BIGINT(20)      NOT NULL AUTO_INCREMENT COMMENT '解锁记录ID（主键）',
+
+    -- Relation
+    `user_id`           BIGINT(20)      NOT NULL COMMENT '解锁者用户ID（谁解锁的）',
+    `target_user_id`    BIGINT(20)      NOT NULL COMMENT '被解锁者用户ID（解锁谁的微信）',
+
+    -- Unlock Info
+    `unlock_type`       VARCHAR(20)     NOT NULL DEFAULT 'coins' COMMENT '解锁方式: coins-金币解锁, vip-VIP免费解锁',
+    `cost_coins`        INT(11)         NOT NULL DEFAULT 0 COMMENT '消耗金币数（VIP免费解锁时为0）',
+
+    -- Audit Fields
+    `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '解锁时间',
+    `updated_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '软删除',
+    `version`           INT(11)         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+
+    PRIMARY KEY (`unlock_id`),
+    UNIQUE KEY `uk_user_target` (`user_id`, `target_user_id`, `deleted`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_target_user_id` (`target_user_id`),
+    KEY `idx_created_at` (`created_at`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='微信解锁记录表';
+
+
+-- ========================================
+-- 11. wechat_unlock_config - 微信解锁配置表
+-- ========================================
+CREATE TABLE `wechat_unlock_config` (
+    -- Primary Key
+    `config_id`         BIGINT(20)      NOT NULL AUTO_INCREMENT COMMENT '配置ID（主键）',
+
+    -- Config Key
+    `config_key`        VARCHAR(50)     NOT NULL COMMENT '配置键',
+    `config_value`      VARCHAR(200)    NOT NULL COMMENT '配置值',
+    `config_desc`       VARCHAR(500)    DEFAULT NULL COMMENT '配置描述',
+
+    -- Audit Fields
+    `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '软删除',
+    `version`           INT(11)         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+
+    PRIMARY KEY (`config_id`),
+    UNIQUE KEY `uk_config_key` (`config_key`, `deleted`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='微信解锁配置表';
+
+
+-- ========================================
+-- 12. skill_config - 技能配置表（预定义技能模板）
+-- 对应UI文档: 添加技能页_结构文档.md
+-- ========================================
+CREATE TABLE `skill_config` (
+    -- Primary Key
+    `config_id`         BIGINT(20)      NOT NULL AUTO_INCREMENT COMMENT '配置ID（主键）',
+
+    -- Basic Info
+    `name`              VARCHAR(50)     NOT NULL COMMENT '技能名称（王者荣耀、探店等）',
+    `icon`              VARCHAR(500)    NOT NULL COMMENT '技能图标URL',
+    `skill_type`        VARCHAR(20)     NOT NULL COMMENT '技能类型: online=线上, offline=线下',
+    `category`          VARCHAR(50)     DEFAULT NULL COMMENT '分类（游戏、生活服务等）',
+
+    -- Sort & Status
+    `sort_order`        INT(11)         NOT NULL DEFAULT 0 COMMENT '排序序号（越小越靠前）',
+    `status`            TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '状态: 0=禁用, 1=启用',
+
+    -- Audit Fields
+    `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '软删除',
+    `version`           INT(11)         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+
+    PRIMARY KEY (`config_id`),
+    KEY `idx_skill_type` (`skill_type`),
+    KEY `idx_status` (`status`),
+    KEY `idx_sort_order` (`sort_order`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='技能配置表';
+
+
+-- ========================================
+-- 13. skill_rank_config - 段位配置表（线上技能的段位选项）
+-- 对应UI文档: RankPickerModal
+-- ========================================
+CREATE TABLE `skill_rank_config` (
+    -- Primary Key
+    `rank_id`           BIGINT(20)      NOT NULL AUTO_INCREMENT COMMENT '段位ID（主键）',
+
+    -- Reference
+    `skill_config_id`   BIGINT(20)      NOT NULL COMMENT '技能配置ID（关联skill_config）',
+
+    -- Rank Info
+    `server`            VARCHAR(20)     NOT NULL COMMENT '服务区: qq=QQ区, weixin=微信区, default=通用',
+    `rank_name`         VARCHAR(50)     NOT NULL COMMENT '段位名称（永恒钻石、至尊星耀等）',
+    `sort_order`        INT(11)         NOT NULL DEFAULT 0 COMMENT '排序序号',
+
+    -- Status
+    `status`            TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '状态: 0=禁用, 1=启用',
+
+    -- Audit Fields
+    `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '软删除',
+
+    PRIMARY KEY (`rank_id`),
+    KEY `idx_skill_config_id` (`skill_config_id`),
+    KEY `idx_server` (`server`),
+    KEY `idx_status` (`status`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='段位配置表';
+
+
+-- ========================================
 -- Foreign Key Constraints (Optional - can be added if needed)
 -- ========================================
 -- ALTER TABLE `user_stats` ADD CONSTRAINT `fk_user_stats_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
@@ -373,17 +513,17 @@ CREATE TABLE `skill_available_times` (
 -- ========================================
 -- 3.1 插入测试用户 (5个用户，覆盖不同场景)
 -- ========================================
-INSERT INTO `users` (`user_id`, `mobile`, `country_code`, `nickname`, `avatar`, `gender`, `birthday`, `residence`, `height`, `weight`, `occupation`, `bio`, `latitude`, `longitude`, `is_online`, `last_login_at`) VALUES
--- 用户1: 深圳南山 - 男性 - 在线
-(1, '13800138001', '+86', '小明同学', 'https://randomuser.me/api/portraits/men/32.jpg', 'male', '1998-05-15', '广东省深圳市南山区', 175, 70, '程序员', '热爱游戏，王者荣耀王者段位', 22.5431, 113.9298, 1, NOW()),
--- 用户2: 深圳福田 - 女性 - 在线
-(2, '13800138002', '+86', '小红姐姐', 'https://randomuser.me/api/portraits/women/44.jpg', 'female', '1996-08-20', '广东省深圳市福田区', 165, 50, '设计师', '陪玩达人，声音好听', 22.5467, 114.0579, 1, NOW()),
--- 用户3: 深圳宝安 - 女性 - 离线
-(3, '13800138003', '+86', '游戏女神', 'https://randomuser.me/api/portraits/women/68.jpg', 'female', '2000-03-10', '广东省深圳市宝安区', 168, 52, '主播', 'LOL钻石选手，期待与你组队', 22.5560, 113.8830, 0, DATE_SUB(NOW(), INTERVAL 2 HOUR)),
--- 用户4: 深圳龙岗 - 男性 - 在线
-(4, '13800138004', '+86', '电竞小王子', 'https://randomuser.me/api/portraits/men/75.jpg', 'male', '1999-11-25', '广东省深圳市龙岗区', 180, 75, '电竞选手', '前职业选手，带你上分', 22.7200, 114.2470, 1, NOW()),
--- 用户5: 深圳罗湖 - 女性 - 在线
-(5, '13800138005', '+86', '甜心小姐姐', 'https://randomuser.me/api/portraits/women/90.jpg', 'female', '1997-07-07', '广东省深圳市罗湖区', 162, 48, '学生', '治愈系声音，聊天解压', 22.5485, 114.1315, 1, DATE_SUB(NOW(), INTERVAL 30 MINUTE));
+INSERT INTO `users` (`user_id`, `mobile`, `country_code`, `nickname`, `avatar`, `gender`, `birthday`, `residence`, `height`, `weight`, `occupation`, `bio`, `latitude`, `longitude`, `level`, `level_exp`, `is_real_verified`, `is_god_verified`, `is_vip`, `vip_expire_time`, `is_online`, `last_login_at`) VALUES
+-- 用户1: 深圳南山 - 男性 - 在线 - 黄金等级 - 实名认证
+(1, '13800138001', '+86', '小明同学', 'https://randomuser.me/api/portraits/men/32.jpg', 'male', '1998-05-15', '广东省深圳市南山区', 175, 70, '程序员', '热爱游戏，王者荣耀王者段位', 22.5431, 113.9298, 3, 2500, 1, 0, 0, NULL, 1, NOW()),
+-- 用户2: 深圳福田 - 女性 - 在线 - 钻石等级 - 大神认证 - VIP
+(2, '13800138002', '+86', '小红姐姐', 'https://randomuser.me/api/portraits/women/44.jpg', 'female', '1996-08-20', '广东省深圳市福田区', 165, 50, '设计师', '陪玩达人，声音好听', 22.5467, 114.0579, 5, 8000, 1, 1, 1, DATE_ADD(NOW(), INTERVAL 180 DAY), 1, NOW()),
+-- 用户3: 深圳宝安 - 女性 - 离线 - 铂金等级 - 实名认证 - 大神认证
+(3, '13800138003', '+86', '游戏女神', 'https://randomuser.me/api/portraits/women/68.jpg', 'female', '2000-03-10', '广东省深圳市宝安区', 168, 52, '主播', 'LOL钻石选手，期待与你组队', 22.5560, 113.8830, 4, 5200, 1, 1, 0, NULL, 0, DATE_SUB(NOW(), INTERVAL 2 HOUR)),
+-- 用户4: 深圳龙岗 - 男性 - 在线 - 王者等级 - 全认证 - VIP
+(4, '13800138004', '+86', '电竞小王子', 'https://randomuser.me/api/portraits/men/75.jpg', 'male', '1999-11-25', '广东省深圳市龙岗区', 180, 75, '电竞选手', '前职业选手，带你上分', 22.7200, 114.2470, 7, 15000, 1, 1, 1, DATE_ADD(NOW(), INTERVAL 365 DAY), 1, NOW()),
+-- 用户5: 深圳罗湖 - 女性 - 在线 - 白银等级 - 新用户
+(5, '13800138005', '+86', '甜心小姐姐', 'https://randomuser.me/api/portraits/women/90.jpg', 'female', '1997-07-07', '广东省深圳市罗湖区', 162, 48, '学生', '治愈系声音，聊天解压', 22.5485, 114.1315, 2, 800, 0, 0, 0, NULL, 1, DATE_SUB(NOW(), INTERVAL 30 MINUTE));
 
 -- ========================================
 -- 3.2 插入用户统计数据
@@ -435,11 +575,89 @@ INSERT INTO `skill_promises` (`skill_id`, `promise_text`, `sort_order`) VALUES
 (6, '包教包会', 2);
 
 -- ========================================
+-- 3.6 插入微信解锁配置
+-- ========================================
+INSERT INTO `wechat_unlock_config` (`config_key`, `config_value`, `config_desc`) VALUES
+('unlock_price', '50', '解锁微信默认价格（金币）'),
+('vip_free_unlock', 'true', 'VIP是否免费解锁微信'),
+('daily_unlock_limit', '10', '每日解锁次数限制');
+
+-- ========================================
+-- 3.7 插入技能配置数据（对应添加技能页UI文档）
+-- ========================================
+INSERT INTO `skill_config` (`config_id`, `name`, `icon`, `skill_type`, `category`, `sort_order`, `status`) VALUES
+-- 线上技能（游戏类）
+(1, '王者荣耀', 'https://cdn.example.com/skills/wzry.png', 'online', '游戏', 1, 1),
+(2, '英雄联盟', 'https://cdn.example.com/skills/lol.png', 'online', '游戏', 2, 1),
+(3, '和平精英', 'https://cdn.example.com/skills/pubg.png', 'online', '游戏', 3, 1),
+(4, '荒野乱斗', 'https://cdn.example.com/skills/hyld.png', 'online', '游戏', 4, 1),
+-- 线下技能（本地服务）
+(5, '探店', 'https://cdn.example.com/skills/tanding.png', 'offline', '生活', 5, 1),
+(6, '私影', 'https://cdn.example.com/skills/siying.png', 'offline', '生活', 6, 1),
+(7, '台球', 'https://cdn.example.com/skills/taiqiu.png', 'offline', '运动', 7, 1),
+(8, 'K歌', 'https://cdn.example.com/skills/kge.png', 'offline', '娱乐', 8, 1),
+(9, '喝酒', 'https://cdn.example.com/skills/hejiu.png', 'offline', '生活', 9, 1),
+(10, '按摩', 'https://cdn.example.com/skills/anmo.png', 'offline', '服务', 10, 1);
+
+-- ========================================
+-- 3.8 插入段位配置数据
+-- ========================================
+-- 王者荣耀 - QQ区 段位
+INSERT INTO `skill_rank_config` (`skill_config_id`, `server`, `rank_name`, `sort_order`, `status`) VALUES
+(1, 'qq', '永恒钻石', 1, 1),
+(1, 'qq', '至尊星耀', 2, 1),
+(1, 'qq', '最强王者', 3, 1),
+(1, 'qq', '非凡王者', 4, 1),
+(1, 'qq', '无双王者', 5, 1),
+(1, 'qq', '荣耀王者', 6, 1),
+(1, 'qq', '传奇王者', 7, 1);
+
+-- 王者荣耀 - 微信区 段位
+INSERT INTO `skill_rank_config` (`skill_config_id`, `server`, `rank_name`, `sort_order`, `status`) VALUES
+(1, 'weixin', '永恒钻石', 1, 1),
+(1, 'weixin', '至尊星耀', 2, 1),
+(1, 'weixin', '最强王者', 3, 1),
+(1, 'weixin', '非凡王者', 4, 1),
+(1, 'weixin', '无双王者', 5, 1),
+(1, 'weixin', '荣耀王者', 6, 1),
+(1, 'weixin', '传奇王者', 7, 1);
+
+-- 英雄联盟 段位（通用）
+INSERT INTO `skill_rank_config` (`skill_config_id`, `server`, `rank_name`, `sort_order`, `status`) VALUES
+(2, 'default', '黄金', 1, 1),
+(2, 'default', '铂金', 2, 1),
+(2, 'default', '翡翠', 3, 1),
+(2, 'default', '钻石', 4, 1),
+(2, 'default', '超凡大师', 5, 1),
+(2, 'default', '傲世宗师', 6, 1),
+(2, 'default', '最强王者', 7, 1);
+
+-- 和平精英 段位
+INSERT INTO `skill_rank_config` (`skill_config_id`, `server`, `rank_name`, `sort_order`, `status`) VALUES
+(3, 'default', '铂金', 1, 1),
+(3, 'default', '钻石', 2, 1),
+(3, 'default', '皇冠', 3, 1),
+(3, 'default', '王牌', 4, 1),
+(3, 'default', '无敌战神', 5, 1),
+(3, 'default', '荣耀战神', 6, 1);
+
+-- 荒野乱斗 段位
+INSERT INTO `skill_rank_config` (`skill_config_id`, `server`, `rank_name`, `sort_order`, `status`) VALUES
+(4, 'default', '黄金', 1, 1),
+(4, 'default', '钻石', 2, 1),
+(4, 'default', '神话', 3, 1),
+(4, 'default', '传奇', 4, 1);
+
+-- ========================================
 -- Step 4: Verification
 -- ========================================
 SELECT '✅ Database created successfully!' AS status;
-SELECT 'Database: xypai_user' AS info;
+SELECT 'Database: xypai_user (v1.0.4)' AS info;
 SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'xypai_user';
+
+-- Verify new skill config tables
+SELECT '技能配置表' AS table_name, COUNT(*) AS count FROM skill_config;
+SELECT '段位配置表' AS table_name, COUNT(*) AS count FROM skill_rank_config;
 
 -- Show all tables
 SHOW TABLES;

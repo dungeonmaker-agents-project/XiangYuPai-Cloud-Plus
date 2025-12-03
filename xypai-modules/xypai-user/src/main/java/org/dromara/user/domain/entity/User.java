@@ -107,6 +107,42 @@ public class User implements Serializable {
     private String bio;
 
     /**
+     * 用户等级: 1-青铜,2-白银,3-黄金,4-铂金,5-钻石,6-大师,7-王者
+     */
+    @TableField("level")
+    private Integer level;
+
+    /**
+     * 当前等级经验值
+     */
+    @TableField("level_exp")
+    private Integer levelExp;
+
+    /**
+     * 是否实名认证: 0-否,1-是
+     */
+    @TableField("is_real_verified")
+    private Boolean isRealVerified;
+
+    /**
+     * 是否大神认证: 0-否,1-是
+     */
+    @TableField("is_god_verified")
+    private Boolean isGodVerified;
+
+    /**
+     * 是否VIP: 0-否,1-是
+     */
+    @TableField("is_vip")
+    private Boolean isVip;
+
+    /**
+     * VIP过期时间
+     */
+    @TableField("vip_expire_time")
+    private LocalDateTime vipExpireTime;
+
+    /**
      * 纬度
      */
     @TableField("latitude")

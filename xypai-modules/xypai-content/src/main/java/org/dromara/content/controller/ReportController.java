@@ -11,10 +11,13 @@ import org.dromara.common.ratelimiter.annotation.RateLimiter;
 import org.dromara.common.ratelimiter.enums.LimitType;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.content.domain.dto.ReportDTO;
+import org.dromara.content.domain.vo.ReportTypeVO;
 import org.dromara.content.domain.vo.ReportVO;
 import org.dromara.content.service.IReportService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 举报管理控制器
@@ -30,6 +33,16 @@ import org.springframework.web.bind.annotation.*;
 public class ReportController extends BaseController {
 
     private final IReportService reportService;
+
+    /**
+     * 获取举报类型列表
+     */
+    @Operation(summary = "获取举报类型列表", description = "获取所有可用的举报类型")
+    @GetMapping("/report/types")
+    public R<List<ReportTypeVO>> getReportTypes() {
+        List<ReportTypeVO> types = reportService.getReportTypes();
+        return R.ok(types);
+    }
 
     /**
      * 提交举报

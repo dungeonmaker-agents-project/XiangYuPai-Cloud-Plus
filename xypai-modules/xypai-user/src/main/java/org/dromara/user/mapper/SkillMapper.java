@@ -102,4 +102,45 @@ public interface SkillMapper extends BaseMapper<Skill> {
      */
     @Select("SELECT COUNT(*) FROM skills WHERE user_id = #{userId} AND deleted = 0")
     long countByUserId(@Param("userId") Long userId);
+
+    /**
+     * 统计用户上架技能数量
+     *
+     * @param userId 用户ID
+     * @return 上架技能数量
+     */
+    @Select("SELECT COUNT(*) FROM skills WHERE user_id = #{userId} AND is_online = 1 AND deleted = 0")
+    long countOnlineSkillsByUserId(@Param("userId") Long userId);
+
+    /**
+     * 分页查询用户技能（用于对方主页）
+     *
+     * @param userId   用户ID
+     * @param offset   偏移量
+     * @param pageSize 每页数量
+     * @return 技能列表
+     */
+    @Select("""
+        SELECT * FROM skills
+        WHERE user_id = #{userId}
+        AND is_online = 1
+        AND deleted = 0
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+        """)
+    List<Skill> selectSkillsByUserId(
+        @Param("userId") Long userId,
+        @Param("offset") int offset,
+        @Param("pageSize") int pageSize
+    );
+
+    /**
+     * 统计用户技能数量（用于对方主页）
+     *
+     * @param userId 用户ID
+     * @return 技能数量
+     */
+    default long countSkillsByUserId(Long userId) {
+        return countOnlineSkillsByUserId(userId);
+    }
 }

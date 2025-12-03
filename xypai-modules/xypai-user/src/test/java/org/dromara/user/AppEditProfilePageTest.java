@@ -30,6 +30,8 @@ import java.util.Map;
  * 9. 💼 更新职业
  * 10. 💬 更新微信号
  * 11. 📝 更新个性签名
+ * 12. 🗺️ 获取省份列表（常居地选择器）
+ * 13. 🏙️ 获取城市列表（常居地选择器）
  *
  * ⚠️ 注意：
  * 头像上传接口 (POST /api/user/profile/avatar/upload) 需要 multipart/form-data
@@ -659,6 +661,87 @@ public class AppEditProfilePageTest {
         } catch (Exception e) {
             log.error("❌ 测试11失败: {}", e.getMessage());
             throw new RuntimeException("更新个性签名测试失败", e);
+        }
+    }
+
+    /**
+     * 🎯 测试12：获取省份列表
+     *
+     * 接口: GET /api/common/regions/provinces
+     * 触发时机: 打开常居地选择器时
+     */
+    @Test
+    @Order(12)
+    @DisplayName("测试12: 获取省份列表")
+    public void test12_GetProvinces() {
+        try {
+            log.info("\n[测试12] 获取省份列表");
+
+            HttpHeaders headers = new HttpHeaders();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            String provincesUrl = GATEWAY_URL + "/xypai-user/api/common/regions/provinces";
+            ResponseEntity<Map> response = restTemplate.exchange(provincesUrl, org.springframework.http.HttpMethod.GET, request, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> responseBody = response.getBody();
+                Integer code = (Integer) responseBody.get("code");
+
+                if (code != null && code == 200) {
+                    java.util.List<?> data = (java.util.List<?>) responseBody.get("data");
+                    log.info("✅ 获取省份列表成功 - 共{}个省份/直辖市", data != null ? data.size() : 0);
+                } else {
+                    String msg = (String) responseBody.get("msg");
+                    throw new RuntimeException("获取省份列表失败: " + msg);
+                }
+            } else {
+                throw new RuntimeException("HTTP请求失败: " + response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 测试12失败: {}", e.getMessage());
+            throw new RuntimeException("获取省份列表测试失败", e);
+        }
+    }
+
+    /**
+     * 🎯 测试13：获取城市列表
+     *
+     * 接口: GET /api/common/regions/cities?provinceCode=440000
+     * 触发时机: 选择省份后
+     */
+    @Test
+    @Order(13)
+    @DisplayName("测试13: 获取城市列表")
+    public void test13_GetCities() {
+        try {
+            log.info("\n[测试13] 获取城市列表（广东省）");
+
+            HttpHeaders headers = new HttpHeaders();
+            HttpEntity<Void> request = new HttpEntity<>(headers);
+
+            // 广东省编码: 440000
+            String citiesUrl = GATEWAY_URL + "/xypai-user/api/common/regions/cities?provinceCode=440000";
+            ResponseEntity<Map> response = restTemplate.exchange(citiesUrl, org.springframework.http.HttpMethod.GET, request, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> responseBody = response.getBody();
+                Integer code = (Integer) responseBody.get("code");
+
+                if (code != null && code == 200) {
+                    java.util.List<?> data = (java.util.List<?>) responseBody.get("data");
+                    log.info("✅ 获取城市列表成功 - 广东省共{}个城市", data != null ? data.size() : 0);
+                } else {
+                    String msg = (String) responseBody.get("msg");
+                    throw new RuntimeException("获取城市列表失败: " + msg);
+                }
+            } else {
+                throw new RuntimeException("HTTP请求失败: " + response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 测试13失败: {}", e.getMessage());
+            throw new RuntimeException("获取城市列表测试失败", e);
         }
     }
 

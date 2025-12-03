@@ -13,14 +13,18 @@ import org.dromara.user.domain.dto.SkillUpdateDto;
 import org.dromara.user.domain.dto.OnlineSkillCreateDto;
 import org.dromara.user.domain.dto.OfflineSkillCreateDto;
 import org.dromara.user.domain.dto.AvailableTimeDto;
+import org.dromara.user.domain.dto.SkilledUsersQueryDto;
 import org.dromara.user.domain.vo.*;
 import org.dromara.user.mapper.*;
 import org.dromara.user.service.ISkillService;
+import org.dromara.appuser.api.domain.vo.LimitedTimeUserVo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -39,6 +43,12 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
     private final SkillImageMapper skillImageMapper;
     private final SkillPromiseMapper skillPromiseMapper;
     private final SkillAvailableTimeMapper skillAvailableTimeMapper;
+    private final UserMapper userMapper;
+
+    // 促销标签列表
+    private static final String[] PROMOTION_TAGS = {
+        "限时特价", "今日优惠", "新人专享", "热门推荐", "超值特惠"
+    };
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -374,5 +384,174 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
             .serviceType(skill.getServiceType())
             .serviceLocation(skill.getServiceLocation())
             .build();
+    }
+
+    @Override
+    public SkilledUsersResultVo getSkilledUsers(SkilledUsersQueryDto queryDto) {
+        // 1. 从数据库查询有技能的用户列表
+        List<LimitedTimeUserVo> users = userMapper.queryLimitedTimeUsers(
+            queryDto.getGender(),
+            queryDto.getCityCode(),
+            queryDto.getDistrictCode(),
+            queryDto.getLatitude(),
+            queryDto.getLongitude(),
+            (queryDto.getPageNum() - 1) * queryDto.getPageSize(),
+            queryDto.getPageSize()
+        );
+
+        // 2. 获取总数
+        Integer total = userMapper.countLimitedTimeUsers(
+            queryDto.getGender(),
+            queryDto.getCityCode(),
+            queryDto.getDistrictCode()
+        );
+
+        // 3. 转换为 SkilledUserVo
+        List<SkilledUserVo> skilledUsers = users.stream()
+            .map(this::convertToSkilledUser)
+            .collect(Collectors.toList());
+
+        // 4. 应用排序
+        skilledUsers = applySorting(skilledUsers, queryDto.getSortBy());
+
+        // 5. 计算是否有更多
+        boolean hasMore = (queryDto.getPageNum() * queryDto.getPageSize()) < total;
+
+        // 6. 构建响应
+        return SkilledUsersResultVo.builder()
+            .total(total)
+            .hasMore(hasMore)
+            .filters(buildFilterOptions())
+            .list(skilledUsers)
+            .build();
+    }
+
+    /**
+     * 转换为 SkilledUserVo
+     */
+    private SkilledUserVo convertToSkilledUser(LimitedTimeUserVo rpcUser) {
+        // 计算促销价格 (临时Mock 7折优惠)
+        int originalPrice = rpcUser.getPrice() != null ? rpcUser.getPrice().intValue() : 15;
+        int promotionPrice = (int) (originalPrice * 0.7);
+
+        // 选择促销标签
+        String promotionTag = PROMOTION_TAGS[(rpcUser.getUserId().intValue()) % PROMOTION_TAGS.length];
+
+        // 构建标签列表
+        List<SkilledUserVo.UserTag> tags = new ArrayList<>();
+
+        // 在线标签
+        if (rpcUser.getIsOnline() != null && rpcUser.getIsOnline()) {
+            tags.add(SkilledUserVo.UserTag.builder()
+                .text("可线上")
+                .type("feature")
+                .color("#4CAF50")
+                .build());
+        }
+
+        // 促销标签
+        tags.add(SkilledUserVo.UserTag.builder()
+            .text("限时7折")
+            .type("price")
+            .color("#FF5722")
+            .build());
+
+        // 技能标签
+        if (rpcUser.getSkillName() != null) {
+            tags.add(SkilledUserVo.UserTag.builder()
+                .text(rpcUser.getSkillName())
+                .type("skill")
+                .color("#2196F3")
+                .build());
+        }
+
+        return SkilledUserVo.builder()
+            .userId(rpcUser.getUserId())
+            .avatar(rpcUser.getAvatar())
+            .nickname(rpcUser.getNickname())
+            .gender(rpcUser.getGender())
+            .age(rpcUser.getAge() != null ? rpcUser.getAge() : 0)
+            .distance(rpcUser.getDistance() != null ? rpcUser.getDistance() : 0)
+            .distanceText(formatDistance(rpcUser.getDistance() != null ? rpcUser.getDistance() : 0))
+            .tags(tags)
+            .description(rpcUser.getBio() != null && !rpcUser.getBio().isEmpty() ?
+                rpcUser.getBio() : "资深陪玩师，服务态度好，技术过硬！")
+            .price(SkilledUserVo.PriceInfo.builder()
+                .amount(promotionPrice)
+                .unit(rpcUser.getPriceUnit() != null ? rpcUser.getPriceUnit() : "per_order")
+                .displayText(promotionPrice + " 金币/" +
+                    (rpcUser.getPriceUnit() != null && rpcUser.getPriceUnit().equals("小时") ? "小时" : "单"))
+                .originalPrice(originalPrice)
+                .build())
+            .promotionTag(promotionTag)
+            .isOnline(rpcUser.getIsOnline() != null ? rpcUser.getIsOnline() : false)
+            .skillLevel(rpcUser.getSkillLevel() != null ? rpcUser.getSkillLevel() : "熟练")
+            .skillId(rpcUser.getSkillId())
+            .skillName(rpcUser.getSkillName())
+            .build();
+    }
+
+    /**
+     * 应用排序
+     */
+    private List<SkilledUserVo> applySorting(List<SkilledUserVo> users, String sortBy) {
+        if (sortBy == null || "smart_recommend".equals(sortBy)) {
+            // 智能推荐排序
+            return users.stream()
+                .sorted(Comparator.comparingInt(u ->
+                    -(u.getIsOnline() ? 1000 : 0)
+                        - (1000 - u.getDistance() / 100)
+                        - (100 - u.getPrice().getAmount())))
+                .collect(Collectors.toList());
+        } else if ("price_asc".equals(sortBy)) {
+            return users.stream()
+                .sorted(Comparator.comparingInt(u -> u.getPrice().getAmount()))
+                .collect(Collectors.toList());
+        } else if ("price_desc".equals(sortBy)) {
+            return users.stream()
+                .sorted(Comparator.comparingInt(u -> -u.getPrice().getAmount()))
+                .collect(Collectors.toList());
+        } else if ("distance_asc".equals(sortBy)) {
+            return users.stream()
+                .sorted(Comparator.comparingInt(SkilledUserVo::getDistance))
+                .collect(Collectors.toList());
+        }
+        return users;
+    }
+
+    /**
+     * 构建筛选选项
+     */
+    private SkilledUsersResultVo.FilterOptions buildFilterOptions() {
+        return SkilledUsersResultVo.FilterOptions.builder()
+            .sortOptions(Arrays.asList(
+                SkilledUsersResultVo.Option.builder().value("smart_recommend").label("智能推荐").build(),
+                SkilledUsersResultVo.Option.builder().value("price_asc").label("价格从低到高").build(),
+                SkilledUsersResultVo.Option.builder().value("price_desc").label("价格从高到低").build(),
+                SkilledUsersResultVo.Option.builder().value("distance_asc").label("距离最近").build()
+            ))
+            .genderOptions(Arrays.asList(
+                SkilledUsersResultVo.Option.builder().value("all").label("不限性别").build(),
+                SkilledUsersResultVo.Option.builder().value("male").label("男").build(),
+                SkilledUsersResultVo.Option.builder().value("female").label("女").build()
+            ))
+            .languageOptions(Arrays.asList(
+                SkilledUsersResultVo.Option.builder().value("all").label("语言(不限)").build(),
+                SkilledUsersResultVo.Option.builder().value("mandarin").label("普通话").build(),
+                SkilledUsersResultVo.Option.builder().value("cantonese").label("粤语").build(),
+                SkilledUsersResultVo.Option.builder().value("english").label("英语").build()
+            ))
+            .build();
+    }
+
+    /**
+     * 格式化距离
+     */
+    private String formatDistance(int meters) {
+        if (meters < 1000) {
+            return meters + "m";
+        } else {
+            return String.format("%.1fkm", meters / 1000.0);
+        }
     }
 }

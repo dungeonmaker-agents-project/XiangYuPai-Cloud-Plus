@@ -127,6 +127,13 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- App User API (for calling user service RPC) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>xypai-api-appuser</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!-- Elasticsearch (for search functionality) -->
         <dependency>
             <groupId>org.dromara</groupId>

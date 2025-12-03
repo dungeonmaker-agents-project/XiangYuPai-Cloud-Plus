@@ -59,6 +59,31 @@ public class RemoteAppUserVo implements Serializable {
     private String bio;
 
     /**
+     * 用户等级: 1-青铜,2-白银,3-黄金,4-铂金,5-钻石,6-大师,7-王者
+     */
+    private Integer level;
+
+    /**
+     * 用户等级名称
+     */
+    private String levelName;
+
+    /**
+     * 是否实名认证
+     */
+    private Boolean isRealVerified;
+
+    /**
+     * 是否大神认证
+     */
+    private Boolean isGodVerified;
+
+    /**
+     * 是否VIP
+     */
+    private Boolean isVip;
+
+    /**
      * 是否在线
      */
     private Boolean isOnline;
@@ -77,4 +102,26 @@ public class RemoteAppUserVo implements Serializable {
      * 获赞数
      */
     private Integer likesCount;
+
+    /**
+     * 是否已被当前用户关注（需要传入currentUserId才会计算）
+     */
+    private Boolean isFollowed;
+
+    /**
+     * 获取等级名称
+     */
+    public static String getLevelNameByLevel(Integer level) {
+        if (level == null) return "青铜";
+        return switch (level) {
+            case 1 -> "青铜";
+            case 2 -> "白银";
+            case 3 -> "黄金";
+            case 4 -> "铂金";
+            case 5 -> "钻石";
+            case 6 -> "大师";
+            case 7 -> "王者";
+            default -> "青铜";
+        };
+    }
 }

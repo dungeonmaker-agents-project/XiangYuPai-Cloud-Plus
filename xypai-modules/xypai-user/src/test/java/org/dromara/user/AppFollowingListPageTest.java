@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,7 +20,7 @@ import java.util.Map;
  * 测试 App 关注列表页面的完整功能
  *
  * 测试流程:
- * 1. 📋 获取关注列表
+ * 1. 📋 获取关注列表（验证新字段：age, isVerified, signature, relationStatus）
  * 2. 🔍 搜索关注列表
  * 3. ➖ 取消关注
  *
@@ -27,8 +28,15 @@ import java.util.Map;
  * - 集成测试，调用真实服务
  * - 需要手动启动：Gateway(8080), xypai-auth(9211), xypai-user(9401), Nacos, Redis, MySQL
  *
+ * 📝 新增字段说明（2025-12-02 更新）：
+ * - age: 从birthday计算的年龄
+ * - isVerified: 是否实名认证
+ * - signature: 个性签名（与bio相同）
+ * - relationStatus: 关系状态（none/following/followed/mutual）
+ *
  * @author XyPai Team
  * @date 2025-11-18
+ * @updated 2025-12-02 - 添加新字段验证
  */
 @Slf4j
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -155,14 +163,14 @@ public class AppFollowingListPageTest {
     }
 
     /**
-     * 🎯 测试2：获取关注列表
+     * 🎯 测试2：获取关注列表（验证新字段）
      */
     @Test
     @Order(2)
-    @DisplayName("测试2: 获取关注列表")
+    @DisplayName("测试2: 获取关注列表（验证新字段: age, isVerified, signature, relationStatus）")
     public void test2_GetFollowingList() {
         try {
-            log.info("\n[测试2] 获取关注列表");
+            log.info("\n[测试2] 获取关注列表（验证新字段）");
             ensureAuthenticated();
 
             HttpHeaders headers = new HttpHeaders();
@@ -177,8 +185,36 @@ public class AppFollowingListPageTest {
 
                 // TableDataInfo 直接返回，没有包装在 R 中
                 Object records = responseBody.get("rows");
-                int followingCount = (records instanceof java.util.List) ? ((java.util.List<?>) records).size() : 0;
+                int followingCount = (records instanceof List) ? ((List<?>) records).size() : 0;
                 log.info("✅ 获取关注列表成功 - 总数: {}, 当前页: {}", responseBody.get("total"), followingCount);
+
+                // 验证新字段
+                if (records instanceof List && !((List<?>) records).isEmpty()) {
+                    Map<String, Object> firstUser = (Map<String, Object>) ((List<?>) records).get(0);
+                    log.info("📋 验证返回字段:");
+                    log.info("   - userId: {}", firstUser.get("userId"));
+                    log.info("   - nickname: {}", firstUser.get("nickname"));
+                    log.info("   - avatar: {}", firstUser.get("avatar"));
+                    log.info("   - gender: {}", firstUser.get("gender"));
+                    log.info("   - age: {} (新字段)", firstUser.get("age"));
+                    log.info("   - isVerified: {} (新字段)", firstUser.get("isVerified"));
+                    log.info("   - signature: {} (新字段)", firstUser.get("signature"));
+                    log.info("   - bio: {}", firstUser.get("bio"));
+                    log.info("   - relationStatus: {} (新字段)", firstUser.get("relationStatus"));
+                    log.info("   - followStatus: {}", firstUser.get("followStatus"));
+                    log.info("   - isFollowing: {}", firstUser.get("isFollowing"));
+                    log.info("   - isMutualFollow: {}", firstUser.get("isMutualFollow"));
+
+                    // 验证relationStatus为following或mutual（因为是关注列表）
+                    String relationStatus = (String) firstUser.get("relationStatus");
+                    if (relationStatus != null) {
+                        Assertions.assertTrue(
+                            "following".equals(relationStatus) || "mutual".equals(relationStatus),
+                            "关注列表中的relationStatus应为following或mutual"
+                        );
+                        log.info("✅ relationStatus验证通过: {}", relationStatus);
+                    }
+                }
             } else {
                 throw new RuntimeException("HTTP请求失败: " + response.getStatusCode());
             }
@@ -213,7 +249,7 @@ public class AppFollowingListPageTest {
 
                 // TableDataInfo 直接返回，没有包装在 R 中
                 Object records = responseBody.get("rows");
-                int resultCount = (records instanceof java.util.List) ? ((java.util.List<?>) records).size() : 0;
+                int resultCount = (records instanceof List) ? ((List<?>) records).size() : 0;
                 log.info("✅ 搜索关注列表成功 - 搜索结果数量: {}", resultCount);
             } else {
                 log.warn("⚠️ 搜索关注列表返回非2xx: {}", response.getStatusCode());

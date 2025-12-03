@@ -80,7 +80,8 @@ public class Comment implements Serializable {
      * 删除标记: 0=未删除,1=已删除
      */
     @TableLogic
-    private Integer deleted;
+    @Builder.Default
+    private Integer deleted = 0;
 
     /**
      * 创建时间

@@ -124,6 +124,12 @@ public class FeedDetailVO implements Serializable {
         @Schema(description = "年龄")
         private Integer age;
 
+        @Schema(description = "用户等级: 1-青铜,2-白银,3-黄金,4-铂金,5-钻石,6-大师,7-王者")
+        private Integer level;
+
+        @Schema(description = "用户等级名称")
+        private String levelName;
+
         @Schema(description = "是否已关注")
         private Boolean isFollowed;
 
