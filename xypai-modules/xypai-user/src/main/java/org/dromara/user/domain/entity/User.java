@@ -77,6 +77,12 @@ public class User implements Serializable {
     private String residence;
 
     /**
+     * 常居地编码（用于地区查询）
+     */
+    @TableField("location_code")
+    private String locationCode;
+
+    /**
      * 身高（cm, 100-250）
      */
     @TableField("height")

@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.appbff.domain.dto.UnlockWechatDTO;
+import org.dromara.appbff.domain.vo.MomentsListVO;
 import org.dromara.appbff.domain.vo.OtherUserProfileVO;
 import org.dromara.appbff.domain.vo.ProfileInfoVO;
 import org.dromara.appbff.domain.vo.UnlockWechatResultVO;
@@ -159,6 +160,61 @@ public class OtherUserProfileController {
             return R.ok();
         } else {
             return R.fail("尚未关注该用户");
+        }
+    }
+
+    // ==================== 动态列表相关接口 ====================
+
+    @Operation(summary = "获取用户动态列表", description = "获取指定用户发布的动态列表")
+    @GetMapping("/{userId}/moments")
+    public R<MomentsListVO> getUserMoments(
+        @Parameter(description = "目标用户ID") @PathVariable Long userId,
+        @Parameter(description = "页码") @RequestParam(required = false, defaultValue = "1") Integer pageNum,
+        @Parameter(description = "每页数量") @RequestParam(required = false, defaultValue = "10") Integer pageSize,
+        HttpServletRequest request
+    ) {
+        Long currentUserId = getCurrentUserId(request);
+        MomentsListVO result = otherUserProfileService.getUserMoments(
+            userId, currentUserId, pageNum, pageSize
+        );
+        return R.ok(result);
+    }
+
+    @Operation(summary = "点赞动态", description = "点赞指定动态")
+    @PostMapping("/moment/{momentId}/like")
+    public R<Void> likeMoment(
+        @Parameter(description = "动态ID") @PathVariable Long momentId,
+        HttpServletRequest request
+    ) {
+        Long currentUserId = getCurrentUserId(request);
+        if (currentUserId == null) {
+            return R.fail("请先登录");
+        }
+
+        boolean success = otherUserProfileService.likeMoment(currentUserId, momentId);
+        if (success) {
+            return R.ok();
+        } else {
+            return R.fail("已点赞过该动态");
+        }
+    }
+
+    @Operation(summary = "取消点赞动态", description = "取消对指定动态的点赞")
+    @DeleteMapping("/moment/{momentId}/like")
+    public R<Void> unlikeMoment(
+        @Parameter(description = "动态ID") @PathVariable Long momentId,
+        HttpServletRequest request
+    ) {
+        Long currentUserId = getCurrentUserId(request);
+        if (currentUserId == null) {
+            return R.fail("请先登录");
+        }
+
+        boolean success = otherUserProfileService.unlikeMoment(currentUserId, momentId);
+        if (success) {
+            return R.ok();
+        } else {
+            return R.fail("尚未点赞该动态");
         }
     }
 }

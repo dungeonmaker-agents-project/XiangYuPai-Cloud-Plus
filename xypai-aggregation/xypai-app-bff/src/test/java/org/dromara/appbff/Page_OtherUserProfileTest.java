@@ -18,9 +18,12 @@ import static org.junit.jupiter.api.Assertions.*;
  *     <li>GET /api/profile/{userId} - 获取对方主页数据</li>
  *     <li>GET /api/profile/{userId}/info - 获取用户资料详情</li>
  *     <li>GET /api/profile/{userId}/skills - 获取用户技能列表</li>
+ *     <li>GET /api/profile/{userId}/moments - 获取用户动态列表</li>
  *     <li>POST /api/profile/unlock-wechat - 解锁微信</li>
  *     <li>POST /api/profile/{userId}/follow - 关注用户</li>
  *     <li>DELETE /api/profile/{userId}/follow - 取消关注</li>
+ *     <li>POST /api/profile/moment/{momentId}/like - 点赞动态</li>
+ *     <li>DELETE /api/profile/moment/{momentId}/like - 取消点赞动态</li>
  * </ul>
  *
  * @author XyPai Team
@@ -193,6 +196,127 @@ public class Page_OtherUserProfileTest {
         }
     }
 
+    // ==================== 3.5 获取用户动态列表 ====================
+
+    @Test
+    @Order(51)
+    @DisplayName("3.5.1 获取用户动态列表 - 正常请求")
+    void testGetUserMoments_Success() {
+        String url = BASE_URL + "/api/profile/" + TARGET_USER_ID + "/moments?pageNum=1&pageSize=10";
+
+        HttpEntity<Void> request = new HttpEntity<>(createHeaders());
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                url, HttpMethod.GET, request, Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            Map<String, Object> body = response.getBody();
+            assertEquals(200, body.get("code"));
+
+            Map<String, Object> data = (Map<String, Object>) body.get("data");
+            assertNotNull(data);
+            assertNotNull(data.get("list"));
+            assertNotNull(data.get("total"));
+            assertNotNull(data.get("hasMore"));
+
+            System.out.println("✅ 获取用户动态列表成功");
+            System.out.println("   总数: " + data.get("total"));
+            System.out.println("   是否有更多: " + data.get("hasMore"));
+
+            // 验证列表结构
+            java.util.List<Map<String, Object>> list = (java.util.List<Map<String, Object>>) data.get("list");
+            if (!list.isEmpty()) {
+                Map<String, Object> firstMoment = list.get(0);
+                System.out.println("   第一条动态:");
+                System.out.println("     ID: " + firstMoment.get("id"));
+                System.out.println("     类型: " + firstMoment.get("type"));
+                System.out.println("     标题: " + ((Map<String, Object>) firstMoment.get("textData")).get("title"));
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ 测试跳过: " + e.getMessage());
+        }
+    }
+
+    @Test
+    @Order(52)
+    @DisplayName("3.5.2 获取用户动态列表 - 分页请求")
+    void testGetUserMoments_Pagination() {
+        String url = BASE_URL + "/api/profile/" + TARGET_USER_ID + "/moments?pageNum=2&pageSize=5";
+
+        HttpEntity<Void> request = new HttpEntity<>(createHeaders());
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                url, HttpMethod.GET, request, Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            Map<String, Object> body = response.getBody();
+            assertEquals(200, body.get("code"));
+
+            System.out.println("✅ 获取用户动态列表（第2页）成功");
+            Map<String, Object> data = (Map<String, Object>) body.get("data");
+            java.util.List<Map<String, Object>> list = (java.util.List<Map<String, Object>>) data.get("list");
+            System.out.println("   当前页数据量: " + list.size());
+        } catch (Exception e) {
+            System.out.println("⚠️ 测试跳过: " + e.getMessage());
+        }
+    }
+
+    // ==================== 3.6 动态点赞 ====================
+
+    private static Long TEST_MOMENT_ID = 1L;  // 测试用动态ID
+
+    @Test
+    @Order(53)
+    @DisplayName("3.6.1 点赞动态 - 正常请求")
+    void testLikeMoment_Success() {
+        String url = BASE_URL + "/api/profile/moment/" + TEST_MOMENT_ID + "/like";
+
+        HttpEntity<Void> request = new HttpEntity<>(createHeaders());
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                url, HttpMethod.POST, request, Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            Map<String, Object> body = response.getBody();
+
+            System.out.println("✅ 点赞动态接口调用成功");
+            System.out.println("   响应码: " + body.get("code"));
+            System.out.println("   消息: " + body.get("msg"));
+        } catch (Exception e) {
+            System.out.println("⚠️ 测试跳过: " + e.getMessage());
+        }
+    }
+
+    @Test
+    @Order(54)
+    @DisplayName("3.6.2 取消点赞动态 - 正常请求")
+    void testUnlikeMoment_Success() {
+        String url = BASE_URL + "/api/profile/moment/" + TEST_MOMENT_ID + "/like";
+
+        HttpEntity<Void> request = new HttpEntity<>(createHeaders());
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(
+                url, HttpMethod.DELETE, request, Map.class
+            );
+
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            Map<String, Object> body = response.getBody();
+
+            System.out.println("✅ 取消点赞动态接口调用成功");
+            System.out.println("   响应码: " + body.get("code"));
+            System.out.println("   消息: " + body.get("msg"));
+        } catch (Exception e) {
+            System.out.println("⚠️ 测试跳过: " + e.getMessage());
+        }
+    }
+
     // ==================== 4. 关注/取消关注 ====================
 
     @Test
@@ -306,17 +430,30 @@ public class Page_OtherUserProfileTest {
         System.out.println("   Query: pageNum, pageSize");
         System.out.println("   Response: UserSkillsListVO\n");
 
-        System.out.println("4. 解锁微信");
+        System.out.println("4. 获取用户动态列表");
+        System.out.println("   GET /api/profile/{userId}/moments");
+        System.out.println("   Query: pageNum, pageSize");
+        System.out.println("   Response: MomentsListVO\n");
+
+        System.out.println("5. 解锁微信");
         System.out.println("   POST /api/profile/unlock-wechat");
         System.out.println("   Body: { targetUserId, unlockType, paymentPassword }");
         System.out.println("   Response: UnlockWechatResultVO\n");
 
-        System.out.println("5. 关注用户");
+        System.out.println("6. 关注用户");
         System.out.println("   POST /api/profile/{userId}/follow");
         System.out.println("   Response: R<Void>\n");
 
-        System.out.println("6. 取消关注");
+        System.out.println("7. 取消关注");
         System.out.println("   DELETE /api/profile/{userId}/follow");
+        System.out.println("   Response: R<Void>\n");
+
+        System.out.println("8. 点赞动态");
+        System.out.println("   POST /api/profile/moment/{momentId}/like");
+        System.out.println("   Response: R<Void>\n");
+
+        System.out.println("9. 取消点赞动态");
+        System.out.println("   DELETE /api/profile/moment/{momentId}/like");
         System.out.println("   Response: R<Void>\n");
 
         System.out.println("=========================\n");

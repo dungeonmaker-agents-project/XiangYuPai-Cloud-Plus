@@ -2,13 +2,15 @@
 -- XiangYuPai User Service - Complete Database Script
 -- ========================================
 -- Database: xypai_user
--- Version: 1.0.4
+-- Version: 1.0.6
 -- Created: 2025-11-14
--- Updated: 2025-12-02
+-- Updated: 2025-12-03
 -- Description: Complete database setup with fresh schema
 --              Added: user level system (等级系统), verification badges (认证徽章), VIP status
 --              Added: wechat unlock tables (微信解锁记录表)
 --              Added: skill_config tables (技能配置表，段位配置表) - 对应添加技能页UI文档
+--              Added: location_code field (常居地编码，用于地区查询)
+--              Added: user_occupations table (用户职业表，支持多职业选择)
 --
 -- This script will:
 -- 1. DROP existing xypai_user database (⚠️ WARNING: All data will be lost!)
@@ -49,6 +51,7 @@ CREATE TABLE `users` (
     `gender`            VARCHAR(10)     DEFAULT NULL COMMENT '性别: male, female, other',
     `birthday`          DATE            DEFAULT NULL COMMENT '生日',
     `residence`         VARCHAR(200)    DEFAULT NULL COMMENT '居住地（省市区）',
+    `location_code`     VARCHAR(20)     DEFAULT NULL COMMENT '常居地编码（用于地区查询）',
     `height`            INT(11)         DEFAULT NULL COMMENT '身高（cm, 100-250）',
     `weight`            INT(11)         DEFAULT NULL COMMENT '体重（kg, 30-200）',
     `occupation`        VARCHAR(100)    DEFAULT NULL COMMENT '职业（1-30字符）',
@@ -88,6 +91,7 @@ CREATE TABLE `users` (
     UNIQUE KEY `uk_mobile_country` (`mobile`, `country_code`, `deleted`),
     KEY `idx_nickname` (`nickname`),
     KEY `idx_wechat` (`wechat`),
+    KEY `idx_location_code` (`location_code`),
     KEY `idx_latitude_longitude` (`latitude`, `longitude`),
     KEY `idx_deleted` (`deleted`),
     KEY `idx_level` (`level`),
@@ -488,6 +492,34 @@ CREATE TABLE `skill_rank_config` (
 
 
 -- ========================================
+-- 14. user_occupations - 用户职业表（支持多职业）
+-- ========================================
+CREATE TABLE `user_occupations` (
+    -- Primary Key
+    `occupation_id`     BIGINT(20)      NOT NULL AUTO_INCREMENT COMMENT '职业记录ID（主键）',
+
+    -- User Reference
+    `user_id`           BIGINT(20)      NOT NULL COMMENT '用户ID',
+
+    -- Occupation Info
+    `occupation_name`   VARCHAR(50)     NOT NULL COMMENT '职业名称（1-30字符）',
+    `sort_order`        INT(11)         NOT NULL DEFAULT 0 COMMENT '排序序号（越小越靠前）',
+
+    -- Audit Fields
+    `created_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `updated_at`        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted`           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '软删除',
+    `version`           INT(11)         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+
+    PRIMARY KEY (`occupation_id`),
+    UNIQUE KEY `uk_user_occupation` (`user_id`, `occupation_name`, `deleted`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_sort_order` (`sort_order`),
+    KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户职业表（支持多职业）';
+
+
+-- ========================================
 -- Foreign Key Constraints (Optional - can be added if needed)
 -- ========================================
 -- ALTER TABLE `user_stats` ADD CONSTRAINT `fk_user_stats_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
@@ -583,7 +615,25 @@ INSERT INTO `wechat_unlock_config` (`config_key`, `config_value`, `config_desc`)
 ('daily_unlock_limit', '10', '每日解锁次数限制');
 
 -- ========================================
--- 3.7 插入技能配置数据（对应添加技能页UI文档）
+-- 3.7 插入用户职业数据
+-- ========================================
+INSERT INTO `user_occupations` (`user_id`, `occupation_name`, `sort_order`) VALUES
+-- 用户1的职业
+(1, '程序员', 1),
+(1, '游戏博主', 2),
+-- 用户2的职业
+(2, '设计师', 1),
+(2, '陪玩达人', 2),
+-- 用户3的职业
+(3, '主播', 1),
+-- 用户4的职业
+(4, '电竞选手', 1),
+(4, '游戏教练', 2),
+-- 用户5的职业
+(5, '学生', 1);
+
+-- ========================================
+-- 3.8 插入技能配置数据（对应添加技能页UI文档）
 -- ========================================
 INSERT INTO `skill_config` (`config_id`, `name`, `icon`, `skill_type`, `category`, `sort_order`, `status`) VALUES
 -- 线上技能（游戏类）
@@ -600,7 +650,7 @@ INSERT INTO `skill_config` (`config_id`, `name`, `icon`, `skill_type`, `category
 (10, '按摩', 'https://cdn.example.com/skills/anmo.png', 'offline', '服务', 10, 1);
 
 -- ========================================
--- 3.8 插入段位配置数据
+-- 3.9 插入段位配置数据
 -- ========================================
 -- 王者荣耀 - QQ区 段位
 INSERT INTO `skill_rank_config` (`skill_config_id`, `server`, `rank_name`, `sort_order`, `status`) VALUES

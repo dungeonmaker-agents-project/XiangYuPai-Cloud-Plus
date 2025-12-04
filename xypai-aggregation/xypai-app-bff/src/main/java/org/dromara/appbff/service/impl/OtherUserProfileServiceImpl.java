@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.dromara.appbff.domain.dto.UnlockWechatDTO;
+import org.dromara.appbff.domain.vo.MomentsListVO;
 import org.dromara.appbff.domain.vo.OtherUserProfileVO;
 import org.dromara.appbff.domain.vo.ProfileInfoVO;
 import org.dromara.appbff.domain.vo.UnlockWechatResultVO;
@@ -12,14 +13,19 @@ import org.dromara.appbff.service.OtherUserProfileService;
 import org.dromara.appuser.api.RemoteAppUserService;
 import org.dromara.appuser.api.domain.dto.WechatUnlockDto;
 import org.dromara.appuser.api.domain.vo.OtherUserProfileVo;
+import org.dromara.appuser.api.domain.vo.RemoteAppUserVo;
 import org.dromara.appuser.api.domain.vo.UserDetailInfoVo;
 import org.dromara.appuser.api.domain.vo.UserSkillVo;
 import org.dromara.appuser.api.domain.vo.UserSkillsPageResult;
 import org.dromara.appuser.api.domain.vo.WechatUnlockResultVo;
+import org.dromara.content.api.RemoteContentService;
+import org.dromara.content.api.domain.vo.RemoteMomentPageResult;
+import org.dromara.content.api.domain.vo.RemoteMomentVo;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -35,6 +41,9 @@ public class OtherUserProfileServiceImpl implements OtherUserProfileService {
 
     @DubboReference
     private RemoteAppUserService remoteAppUserService;
+
+    @DubboReference
+    private RemoteContentService remoteContentService;
 
     @Override
     public OtherUserProfileVO getOtherUserProfile(Long targetUserId, Long currentUserId, Double latitude, Double longitude) {
@@ -274,6 +283,135 @@ public class OtherUserProfileServiceImpl implements OtherUserProfileService {
             .list(Collections.emptyList())
             .total(0L)
             .hasMore(false)
+            .build();
+    }
+
+    // ==================== 动态列表相关方法实现 ====================
+
+    @Override
+    public MomentsListVO getUserMoments(Long targetUserId, Long currentUserId, Integer pageNum, Integer pageSize) {
+        log.info("获取用户动态列表: targetUserId={}, currentUserId={}, pageNum={}, pageSize={}",
+            targetUserId, currentUserId, pageNum, pageSize);
+
+        try {
+            // 调用RPC获取动态列表
+            RemoteMomentPageResult rpcResult = remoteContentService.getUserMomentList(
+                targetUserId, currentUserId, pageNum, pageSize
+            );
+
+            if (rpcResult == null || rpcResult.getList() == null || rpcResult.getList().isEmpty()) {
+                return createEmptyMomentsList();
+            }
+
+            // 获取作者信息（因为RPC返回的动态数据不包含作者详细信息）
+            // 这里所有动态都是同一个用户的，所以只需要查一次用户信息
+            RemoteAppUserVo authorInfo = null;
+            try {
+                authorInfo = remoteAppUserService.getUserBasicInfo(targetUserId, currentUserId);
+            } catch (Exception e) {
+                log.warn("获取作者信息失败: targetUserId={}, error={}", targetUserId, e.getMessage());
+            }
+
+            // 转换为BFF层VO
+            RemoteAppUserVo finalAuthorInfo = authorInfo;
+            List<MomentsListVO.MomentItemVO> items = rpcResult.getList().stream()
+                .map(rpc -> convertToMomentItemVO(rpc, finalAuthorInfo))
+                .collect(Collectors.toList());
+
+            return MomentsListVO.builder()
+                .list(items)
+                .hasMore(rpcResult.getHasMore())
+                .total(rpcResult.getTotal())
+                .build();
+
+        } catch (Exception e) {
+            log.error("获取用户动态列表失败: targetUserId={}, error={}", targetUserId, e.getMessage(), e);
+            return createEmptyMomentsList();
+        }
+    }
+
+    @Override
+    public boolean likeMoment(Long currentUserId, Long momentId) {
+        log.info("点赞动态: currentUserId={}, momentId={}", currentUserId, momentId);
+
+        try {
+            return remoteContentService.likeMoment(currentUserId, momentId);
+        } catch (Exception e) {
+            log.error("点赞动态失败: currentUserId={}, momentId={}, error={}",
+                currentUserId, momentId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean unlikeMoment(Long currentUserId, Long momentId) {
+        log.info("取消点赞动态: currentUserId={}, momentId={}", currentUserId, momentId);
+
+        try {
+            return remoteContentService.unlikeMoment(currentUserId, momentId);
+        } catch (Exception e) {
+            log.error("取消点赞动态失败: currentUserId={}, momentId={}, error={}",
+                currentUserId, momentId, e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 转换为动态项VO
+     */
+    private MomentsListVO.MomentItemVO convertToMomentItemVO(RemoteMomentVo rpc, RemoteAppUserVo authorInfo) {
+        // 媒体数据
+        MomentsListVO.MediaDataVO mediaData = MomentsListVO.MediaDataVO.builder()
+            .coverUrl(rpc.getCoverUrl())
+            .aspectRatio(rpc.getAspectRatio())
+            .duration(rpc.getDuration())
+            .build();
+
+        // 文本数据
+        MomentsListVO.TextDataVO textData = MomentsListVO.TextDataVO.builder()
+            .title(rpc.getTitle())
+            .build();
+
+        // 作者数据（优先使用查询到的作者信息，否则使用RPC返回的基本信息）
+        MomentsListVO.AuthorDataVO authorData;
+        if (authorInfo != null) {
+            authorData = MomentsListVO.AuthorDataVO.builder()
+                .userId(String.valueOf(authorInfo.getUserId()))
+                .avatar(authorInfo.getAvatar())
+                .nickname(authorInfo.getNickname())
+                .build();
+        } else {
+            authorData = MomentsListVO.AuthorDataVO.builder()
+                .userId(String.valueOf(rpc.getAuthorId()))
+                .avatar(rpc.getAuthorAvatar())
+                .nickname(rpc.getAuthorNickname())
+                .build();
+        }
+
+        // 统计数据
+        MomentsListVO.StatsDataVO statsData = MomentsListVO.StatsDataVO.builder()
+            .likeCount(rpc.getLikeCount())
+            .isLiked(rpc.getIsLiked())
+            .build();
+
+        return MomentsListVO.MomentItemVO.builder()
+            .id(String.valueOf(rpc.getId()))
+            .type(rpc.getType())
+            .mediaData(mediaData)
+            .textData(textData)
+            .authorData(authorData)
+            .statsData(statsData)
+            .build();
+    }
+
+    /**
+     * 创建空的动态列表
+     */
+    private MomentsListVO createEmptyMomentsList() {
+        return MomentsListVO.builder()
+            .list(Collections.emptyList())
+            .hasMore(false)
+            .total(0L)
             .build();
     }
 }

@@ -17,6 +17,7 @@ import org.dromara.user.domain.dto.SkilledUsersQueryDto;
 import org.dromara.user.domain.vo.*;
 import org.dromara.user.mapper.*;
 import org.dromara.user.service.ISkillService;
+import org.dromara.user.service.ISkillConfigService;
 import org.dromara.appuser.api.domain.vo.LimitedTimeUserVo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
     private final SkillPromiseMapper skillPromiseMapper;
     private final SkillAvailableTimeMapper skillAvailableTimeMapper;
     private final UserMapper userMapper;
+    private final ISkillConfigService skillConfigService;
 
     // 促销标签列表
     private static final String[] PROMOTION_TAGS = {
@@ -109,6 +111,17 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public R<Long> createOnlineSkill(Long userId, OnlineSkillCreateDto dto) {
+        // 校验 skillConfigId 有效性
+        if (dto.getSkillConfigId() != null && !dto.getSkillConfigId().isEmpty()) {
+            Long configId = Long.parseLong(dto.getSkillConfigId());
+            if (!skillConfigService.isValidSkillConfigId(configId)) {
+                return R.fail("无效的技能配置ID");
+            }
+            if (!skillConfigService.isSkillTypeMatch(configId, "online")) {
+                return R.fail("技能配置与技能类型不匹配");
+            }
+        }
+
         // Create online skill
         Skill skill = Skill.builder()
             .userId(userId)
@@ -161,6 +174,17 @@ public class SkillServiceImpl extends ServiceImpl<SkillMapper, Skill> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public R<Long> createOfflineSkill(Long userId, OfflineSkillCreateDto dto) {
+        // 校验 skillConfigId 有效性
+        if (dto.getSkillConfigId() != null && !dto.getSkillConfigId().isEmpty()) {
+            Long configId = Long.parseLong(dto.getSkillConfigId());
+            if (!skillConfigService.isValidSkillConfigId(configId)) {
+                return R.fail("无效的技能配置ID");
+            }
+            if (!skillConfigService.isSkillTypeMatch(configId, "offline")) {
+                return R.fail("技能配置与技能类型不匹配");
+            }
+        }
+
         // Create offline skill
         Skill skill = Skill.builder()
             .userId(userId)

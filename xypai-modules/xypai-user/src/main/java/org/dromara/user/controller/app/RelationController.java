@@ -11,6 +11,7 @@ import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.user.domain.dto.UserBlockDto;
 import org.dromara.user.domain.dto.UserReportDto;
+import org.dromara.user.domain.dto.BatchRelationStatusDto;
 import org.dromara.user.domain.vo.UserRelationVo;
 import org.dromara.user.service.IRelationService;
 import org.springframework.validation.annotation.Validated;
@@ -129,5 +130,18 @@ public class RelationController {
         }
         dto.setReportedUserId(reportedUserId);
         return relationService.reportUser(userId, dto);
+    }
+
+    @Operation(summary = "Batch get relation status", description = "批量获取与多个用户的关系状态")
+    @PostMapping("/batch-status")
+    public R<java.util.Map<Long, String>> batchGetRelationStatus(
+        @RequestBody @Validated BatchRelationStatusDto dto,
+        HttpServletRequest request
+    ) {
+        Long userId = getCurrentUserId(request);
+        if (userId == null) {
+            return R.fail("无法获取用户信息");
+        }
+        return R.ok(relationService.batchGetRelationStatus(userId, dto.getUserIds()));
     }
 }

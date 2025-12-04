@@ -41,6 +41,12 @@ public class ProfileInfoVo {
     @Schema(description = "Residence")
     private String residence;
 
+    @Schema(description = "常居地编码")
+    private String locationCode;
+
+    @Schema(description = "职业列表（多选，最多5个）")
+    private List<String> occupations;
+
     @Schema(description = "Height (cm)")
     private Integer height;
 

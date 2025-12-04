@@ -34,6 +34,10 @@ public class UserUpdateDto {
     @Size(max = 200, message = "居住地不能超过200字符")
     private String residence;
 
+    @Schema(description = "常居地编码")
+    @Size(max = 20, message = "常居地编码不能超过20字符")
+    private String locationCode;
+
     @Schema(description = "Height (cm, 100-250)")
     @Min(value = 100, message = "身高范围为100-250cm")
     @Max(value = 250, message = "身高范围为100-250cm")

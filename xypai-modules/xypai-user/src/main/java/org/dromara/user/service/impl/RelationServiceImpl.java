@@ -295,4 +295,20 @@ public class RelationServiceImpl extends ServiceImpl<UserRelationMapper, UserRel
         boolean isBlocked = userBlacklistMapper.hasBlacklist(userId, targetUserId);
         return !isBlocked;
     }
+
+    @Override
+    public java.util.Map<Long, String> batchGetRelationStatus(Long currentUserId, java.util.List<Long> targetUserIds) {
+        java.util.Map<Long, String> result = new java.util.HashMap<>();
+
+        if (targetUserIds == null || targetUserIds.isEmpty()) {
+            return result;
+        }
+
+        for (Long targetUserId : targetUserIds) {
+            String status = getRelationStatus(currentUserId, targetUserId);
+            result.put(targetUserId, status);
+        }
+
+        return result;
+    }
 }

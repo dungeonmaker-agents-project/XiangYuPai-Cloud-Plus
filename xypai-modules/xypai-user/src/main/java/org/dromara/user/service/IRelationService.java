@@ -11,7 +11,7 @@ import org.dromara.user.domain.vo.UserRelationVo;
 
 /**
  * 用户关系服务接口
- * User Relation Service Interface
+ * User Relation Service Interface 
  *
  * @author XiangYuPai
  * @since 2025-11-14
@@ -100,4 +100,14 @@ public interface IRelationService extends IService<UserRelation> {
      * @return 是否有权限
      */
     boolean checkPrivacy(Long userId, Long targetUserId);
+
+    /**
+     * 批量获取关系状态
+     * Batch get relation status for multiple users
+     *
+     * @param currentUserId 当前用户ID
+     * @param targetUserIds 目标用户ID列表
+     * @return Map<用户ID, 关系状态> 关系状态: none, following, followed, mutual
+     */
+    java.util.Map<Long, String> batchGetRelationStatus(Long currentUserId, java.util.List<Long> targetUserIds);
 }

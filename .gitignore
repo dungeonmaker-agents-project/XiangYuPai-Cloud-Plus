@@ -74,3 +74,7 @@ script/docker/rabbitmq/log/
 script/docker/rabbitmq/data/
 script/docker/kafka/data/
 script/docker/grafana/*.db
+
+######################################################################
+# Documentation
+*.md

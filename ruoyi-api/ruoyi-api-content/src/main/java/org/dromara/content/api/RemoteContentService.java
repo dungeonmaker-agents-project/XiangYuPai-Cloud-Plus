@@ -1,5 +1,6 @@
 package org.dromara.content.api;
 
+import org.dromara.content.api.domain.vo.RemoteMomentPageResult;
 import org.dromara.content.api.domain.vo.UserFeedsVo;
 
 import java.util.List;
@@ -58,4 +59,53 @@ public interface RemoteContentService {
      * @return Map<用户ID, 动态总数>
      */
     Map<Long, Integer> batchGetUserFeedCounts(List<Long> userIds);
+
+    // ==================== 对方主页动态列表相关方法 ====================
+
+    /**
+     * 分页获取用户动态列表
+     *
+     * <p>用途：对方主页的动态Tab展示</p>
+     * <p>特点：</p>
+     * <ul>
+     *     <li>支持分页查询</li>
+     *     <li>按创建时间倒序排列</li>
+     *     <li>返回动态的详细信息（封面、标题、点赞数等）</li>
+     *     <li>包含当前用户是否已点赞的状态</li>
+     * </ul>
+     *
+     * @param targetUserId  目标用户ID
+     * @param currentUserId 当前用户ID（用于判断点赞状态，可为null）
+     * @param pageNum       页码（从1开始）
+     * @param pageSize      每页数量
+     * @return 动态分页结果
+     */
+    RemoteMomentPageResult getUserMomentList(Long targetUserId, Long currentUserId, Integer pageNum, Integer pageSize);
+
+    /**
+     * 点赞动态
+     *
+     * @param userId   用户ID
+     * @param momentId 动态ID
+     * @return 是否成功（true-点赞成功，false-已点赞过）
+     */
+    boolean likeMoment(Long userId, Long momentId);
+
+    /**
+     * 取消点赞动态
+     *
+     * @param userId   用户ID
+     * @param momentId 动态ID
+     * @return 是否成功（true-取消成功，false-未点赞过）
+     */
+    boolean unlikeMoment(Long userId, Long momentId);
+
+    /**
+     * 检查用户是否已点赞动态
+     *
+     * @param userId   用户ID
+     * @param momentId 动态ID
+     * @return 是否已点赞
+     */
+    boolean checkMomentLiked(Long userId, Long momentId);
 }

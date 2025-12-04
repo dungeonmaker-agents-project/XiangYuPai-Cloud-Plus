@@ -1,6 +1,7 @@
 package org.dromara.appbff.service;
 
 import org.dromara.appbff.domain.dto.UnlockWechatDTO;
+import org.dromara.appbff.domain.vo.MomentsListVO;
 import org.dromara.appbff.domain.vo.OtherUserProfileVO;
 import org.dromara.appbff.domain.vo.ProfileInfoVO;
 import org.dromara.appbff.domain.vo.UnlockWechatResultVO;
@@ -71,4 +72,35 @@ public interface OtherUserProfileService {
      * @return 是否成功
      */
     boolean unfollowUser(Long currentUserId, Long targetUserId);
+
+    // ==================== 动态列表相关方法 ====================
+
+    /**
+     * 获取用户动态列表
+     *
+     * @param targetUserId  目标用户ID
+     * @param currentUserId 当前用户ID
+     * @param pageNum       页码
+     * @param pageSize      每页数量
+     * @return 动态列表
+     */
+    MomentsListVO getUserMoments(Long targetUserId, Long currentUserId, Integer pageNum, Integer pageSize);
+
+    /**
+     * 点赞动态
+     *
+     * @param currentUserId 当前用户ID
+     * @param momentId      动态ID
+     * @return 是否成功
+     */
+    boolean likeMoment(Long currentUserId, Long momentId);
+
+    /**
+     * 取消点赞动态
+     *
+     * @param currentUserId 当前用户ID
+     * @param momentId      动态ID
+     * @return 是否成功
+     */
+    boolean unlikeMoment(Long currentUserId, Long momentId);
 }

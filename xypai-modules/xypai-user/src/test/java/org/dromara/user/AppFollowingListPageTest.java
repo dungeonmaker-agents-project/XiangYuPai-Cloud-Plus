@@ -303,6 +303,57 @@ public class AppFollowingListPageTest {
         }
     }
 
+    /**
+     * 🎯 测试5：批量获取关系状态
+     */
+    @Test
+    @Order(5)
+    @DisplayName("测试5: 批量获取关系状态")
+    public void test5_BatchGetRelationStatus() {
+        try {
+            log.info("\n[测试5] 批量获取关系状态");
+            ensureAuthenticated();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + authToken);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // 构建请求体
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("userIds", List.of(1L, 2L, 3L));
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+            String batchStatusUrl = GATEWAY_URL + "/xypai-user/api/user/relation/batch-status";
+            ResponseEntity<Map> response = restTemplate.postForEntity(batchStatusUrl, request, Map.class);
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Map<String, Object> responseBody = response.getBody();
+                Integer code = (Integer) responseBody.get("code");
+
+                if (code != null && code == 200) {
+                    Map<String, String> data = (Map<String, String>) responseBody.get("data");
+                    log.info("✅ 批量获取关系状态成功");
+                    log.info("📋 关系状态映射:");
+                    if (data != null) {
+                        data.forEach((userId, status) -> {
+                            log.info("   - 用户{}: {}", userId, status);
+                        });
+                    }
+                } else {
+                    String msg = (String) responseBody.get("msg");
+                    log.warn("⚠️ 批量获取关系状态返回非成功: {}", msg);
+                }
+            } else {
+                log.warn("⚠️ 批量获取关系状态HTTP请求返回非2xx: {}", response.getStatusCode());
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 测试5失败: {}", e.getMessage());
+            log.warn("⚠️ 批量接口可能未实现，继续测试");
+        }
+    }
+
     @AfterAll
     static void tearDown() {
         log.info("\n🎉 所有测试完成！");

@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 用户资料VO
@@ -39,6 +40,12 @@ public class UserProfileVo {
 
     @Schema(description = "Residence")
     private String residence;
+
+    @Schema(description = "常居地编码")
+    private String locationCode;
+
+    @Schema(description = "职业列表（多选，最多5个）")
+    private List<String> occupations;
 
     @Schema(description = "Height (cm)")
     private Integer height;

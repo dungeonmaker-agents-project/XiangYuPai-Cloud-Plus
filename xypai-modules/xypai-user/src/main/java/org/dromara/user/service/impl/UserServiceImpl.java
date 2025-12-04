@@ -17,6 +17,7 @@ import org.dromara.user.mapper.UserBlacklistMapper;
 import org.dromara.user.service.IUserService;
 import org.dromara.user.service.IRelationService;
 import org.dromara.user.service.ISkillService;
+import org.dromara.user.service.IUserOccupationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +46,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     private final UserBlacklistMapper userBlacklistMapper;
     private final IRelationService relationService;
     private final ISkillService skillService;
+    private final IUserOccupationService userOccupationService;
 
     private static final String CACHE_KEY_PREFIX = "user:profile:";
     private static final Duration CACHE_DURATION = Duration.ofMinutes(30);
@@ -92,6 +94,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             .gender(user.getGender())
             .birthday(user.getBirthday())
             .residence(user.getResidence())
+            .locationCode(user.getLocationCode())
             .height(user.getHeight())
             .weight(user.getWeight())
             .occupation(user.getOccupation())
@@ -106,6 +109,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 .canViewSkills(true)
                 .build())
             .build();
+
+        // 加载职业列表
+        R<List<String>> occupationsResult = userOccupationService.getUserOccupations(userId);
+        if (R.isSuccess(occupationsResult) && occupationsResult.getData() != null) {
+            vo.setOccupations(occupationsResult.getData());
+        } else {
+            vo.setOccupations(Collections.emptyList());
+        }
 
         // Cache result
         RedisUtils.setCacheObject(cacheKey, vo, CACHE_DURATION);
@@ -198,6 +209,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             .gender(dto.getGender())
             .birthday(dto.getBirthday())
             .residence(dto.getResidence())
+            .locationCode(dto.getLocationCode())
             .height(dto.getHeight())
             .weight(dto.getWeight())
             .occupation(dto.getOccupation())
@@ -416,6 +428,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             ? skillsData.getRows()
             : Collections.emptyList();
 
+        // 获取用户职业列表
+        R<List<String>> occupationsResult = userOccupationService.getUserOccupations(userId);
+        List<String> occupations = R.isSuccess(occupationsResult) && occupationsResult.getData() != null
+            ? occupationsResult.getData()
+            : Collections.emptyList();
+
         // 构建响应VO
         ProfileInfoVo vo = ProfileInfoVo.builder()
             .userId(user.getUserId())
@@ -424,6 +442,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             .gender(user.getGender())
             .birthday(user.getBirthday())
             .residence(user.getResidence())
+            .locationCode(user.getLocationCode())
+            .occupations(occupations)
             .height(user.getHeight())
             .weight(user.getWeight())
             .occupation(user.getOccupation())
