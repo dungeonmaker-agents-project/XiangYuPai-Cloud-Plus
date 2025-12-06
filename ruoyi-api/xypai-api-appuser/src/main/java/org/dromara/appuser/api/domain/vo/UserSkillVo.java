@@ -73,6 +73,11 @@ public class UserSkillVo implements Serializable {
     private StatsData statsData;
 
     /**
+     * 技能提供者数据（用户信息）
+     */
+    private ProviderData providerData;
+
+    /**
      * 是否上架
      */
     private Boolean isOnline;
@@ -210,5 +215,32 @@ public class UserSkillVo implements Serializable {
          * 订单数
          */
         private Integer orderCount;
+    }
+
+    /**
+     * 技能提供者数据（用户信息）
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ProviderData implements Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        /**
+         * 用户ID
+         */
+        private Long userId;
+
+        /**
+         * 昵称
+         */
+        private String nickname;
+
+        /**
+         * 头像URL
+         */
+        private String avatar;
     }
 }

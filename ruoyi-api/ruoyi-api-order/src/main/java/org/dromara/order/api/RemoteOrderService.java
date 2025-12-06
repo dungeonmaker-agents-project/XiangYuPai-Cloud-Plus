@@ -1,6 +1,8 @@
 package org.dromara.order.api;
 
 import org.dromara.common.core.exception.ServiceException;
+import org.dromara.order.api.domain.CreateOrderRequest;
+import org.dromara.order.api.domain.CreateOrderResult;
 import org.dromara.order.api.domain.UpdateOrderStatusRequest;
 import org.dromara.order.api.domain.OrderCountRequest;
 
@@ -37,4 +39,17 @@ public interface RemoteOrderService {
      * @return 订单数量
      */
     Long getOrderCount(OrderCountRequest request);
+
+    /**
+     * 创建订单（含余额支付）
+     *
+     * <p>调用方：xypai-app-bff (订单确认支付)</p>
+     * <p>场景：用户确认订单后创建订单记录，余额支付时同步扣款</p>
+     * <p>事务：创建订单 + 扣款在同一事务中</p>
+     *
+     * @param request 创建订单请求
+     * @return 订单创建结果（含支付状态）
+     * @throws ServiceException 创建失败/余额不足/服务不存在
+     */
+    CreateOrderResult createOrder(CreateOrderRequest request) throws ServiceException;
 }

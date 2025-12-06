@@ -74,4 +74,29 @@ public interface RemotePaymentService {
      * @return 用户余额
      */
     java.math.BigDecimal getBalance(Long userId);
+
+    /**
+     * 验证支付密码
+     *
+     * <p>调用方：xypai-app-bff (订单确认支付)</p>
+     * <p>场景：用户金币支付前验证6位支付密码</p>
+     * <p>安全机制：错误3次锁定30分钟</p>
+     *
+     * @param userId 用户ID
+     * @param password 6位支付密码（明文）
+     * @return true=验证通过，false=密码错误
+     * @throws ServiceException 账户不存在/已锁定/未设置密码
+     */
+    boolean verifyPaymentPassword(Long userId, String password) throws ServiceException;
+
+    /**
+     * 检查用户是否已设置支付密码
+     *
+     * <p>调用方：xypai-app-bff (订单确认页面)</p>
+     * <p>场景：判断是否需要弹出设置密码引导</p>
+     *
+     * @param userId 用户ID
+     * @return true=已设置，false=未设置
+     */
+    boolean hasPaymentPassword(Long userId);
 }

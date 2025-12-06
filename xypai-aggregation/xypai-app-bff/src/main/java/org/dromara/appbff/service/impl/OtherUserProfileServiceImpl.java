@@ -252,6 +252,15 @@ public class OtherUserProfileServiceImpl implements OtherUserProfileService {
                 .build();
         }
 
+        UserSkillsListVO.ProviderVO providerData = null;
+        if (rpc.getProviderData() != null) {
+            providerData = UserSkillsListVO.ProviderVO.builder()
+                .userId(rpc.getProviderData().getUserId())
+                .nickname(rpc.getProviderData().getNickname())
+                .avatar(rpc.getProviderData().getAvatar())
+                .build();
+        }
+
         UserSkillsListVO.SkillInfoVO skillInfo = null;
         if (rpc.getSkillInfo() != null) {
             skillInfo = UserSkillsListVO.SkillInfoVO.builder()
@@ -273,6 +282,7 @@ public class OtherUserProfileServiceImpl implements OtherUserProfileService {
         return UserSkillsListVO.SkillItemVO.builder()
             .id(rpc.getSkillId())
             .mediaData(mediaData)
+            .providerData(providerData)
             .skillInfo(skillInfo)
             .priceData(priceData)
             .build();

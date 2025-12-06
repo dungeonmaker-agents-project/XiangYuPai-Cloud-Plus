@@ -266,7 +266,7 @@ public class SkillServiceServiceImpl implements SkillServiceService {
      */
     private ServiceCardVO convertToCard(SkillServiceVo rpc) {
         ServiceCardVO card = new ServiceCardVO();
-        card.setServiceId(rpc.getSkillId());
+        card.setSkillId(rpc.getSkillId());
         card.setDescription(rpc.getDescription());
 
         // Provider信息
@@ -286,6 +286,7 @@ public class SkillServiceServiceImpl implements SkillServiceService {
         skill.setGameArea(rpc.getGameArea());
         skill.setRank(rpc.getRank());
         skill.setRankScore(rpc.getRankScore());
+        skill.setPeakScore(rpc.getPeakScore());
         skill.setPosition(rpc.getPositions());
         card.setSkillInfo(skill);
 
@@ -309,11 +310,11 @@ public class SkillServiceServiceImpl implements SkillServiceService {
         price.setDisplayText(rpc.getPriceDisplay());
         card.setPrice(price);
 
-        // 统计
+        // 统计（防御性默认值：确保不返回null给前端）
         ServiceCardVO.StatsVO stats = new ServiceCardVO.StatsVO();
-        stats.setOrders(rpc.getOrderCount());
-        stats.setRating(rpc.getRating());
-        stats.setReviewCount(rpc.getReviewCount());
+        stats.setOrders(rpc.getOrderCount() != null ? rpc.getOrderCount() : 0);
+        stats.setRating(rpc.getRating() != null ? rpc.getRating() : new BigDecimal("5.0"));
+        stats.setReviewCount(rpc.getReviewCount() != null ? rpc.getReviewCount() : 0);
         card.setStats(stats);
 
         // 距离

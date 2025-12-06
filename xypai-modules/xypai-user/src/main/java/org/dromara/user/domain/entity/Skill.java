@@ -119,6 +119,12 @@ public class Skill implements Serializable {
     private String gameRank;
 
     /**
+     * 巅峰分（王者荣耀专用，如：2500）
+     */
+    @TableField("peak_score")
+    private Integer peakScore;
+
+    /**
      * 服务区: QQ区, 微信区（线上技能专用）
      */
     @TableField("server")

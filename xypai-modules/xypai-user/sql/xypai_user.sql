@@ -2,7 +2,7 @@
 -- XiangYuPai User Service - Complete Database Script
 -- ========================================
 -- Database: xypai_user
--- Version: 1.0.6
+-- Version: 1.0.8
 -- Created: 2025-11-14
 -- Updated: 2025-12-03
 -- Description: Complete database setup with fresh schema
@@ -11,6 +11,7 @@
 --              Added: skill_config tables (技能配置表，段位配置表) - 对应添加技能页UI文档
 --              Added: location_code field (常居地编码，用于地区查询)
 --              Added: user_occupations table (用户职业表，支持多职业选择)
+--              Added: peak_score field (巅峰分，王者荣耀陪玩列表页) - v1.0.8
 --
 -- This script will:
 -- 1. DROP existing xypai_user database (⚠️ WARNING: All data will be lost!)
@@ -258,6 +259,7 @@ CREATE TABLE `skills` (
     -- Online Skill Specific Fields
     `game_name`         VARCHAR(100)    DEFAULT NULL COMMENT '游戏名称（线上技能专用）',
     `game_rank`         VARCHAR(50)     DEFAULT NULL COMMENT '游戏段位（线上技能专用）',
+    `peak_score`        INT             DEFAULT NULL COMMENT '巅峰分（王者荣耀专用，如：2500）',
     `server`            VARCHAR(20)     DEFAULT NULL COMMENT '服务区: QQ区, 微信区（线上技能专用）',
     `service_hours`     DECIMAL(4,2)    DEFAULT NULL COMMENT '服务时长（小时/局，线上技能专用）',
 
@@ -558,31 +560,36 @@ INSERT INTO `users` (`user_id`, `mobile`, `country_code`, `nickname`, `avatar`, 
 (5, '13800138005', '+86', '甜心小姐姐', 'https://randomuser.me/api/portraits/women/90.jpg', 'female', '1997-07-07', '广东省深圳市罗湖区', 162, 48, '学生', '治愈系声音，聊天解压', 22.5485, 114.1315, 2, 800, 0, 0, 0, NULL, 1, DATE_SUB(NOW(), INTERVAL 30 MINUTE));
 
 -- ========================================
--- 3.2 插入用户统计数据
+-- 3.2 插入用户统计数据（根据关注关系更新）
 -- ========================================
 INSERT INTO `user_stats` (`user_id`, `following_count`, `fans_count`, `likes_count`, `skills_count`, `orders_count`) VALUES
-(1, 10, 156, 520, 2, 45),
-(2, 25, 890, 2100, 1, 120),
-(3, 15, 450, 980, 2, 78),
-(4, 8, 1200, 3500, 1, 200),
-(5, 30, 320, 650, 1, 35);
+-- 用户1: 关注(2,3,4)=3, 粉丝(2,3,5)=3
+(1, 3, 3, 520, 2, 45),
+-- 用户2: 关注(1,3,4)=3, 粉丝(1,4,5)=3
+(2, 3, 3, 2100, 1, 120),
+-- 用户3: 关注(1,4)=2, 粉丝(1,2,5)=3
+(3, 2, 3, 980, 2, 78),
+-- 用户4: 关注(2,5)=2, 粉丝(1,2,3)=3
+(4, 2, 3, 3500, 1, 200),
+-- 用户5: 关注(1,2,3)=3, 粉丝(4)=1
+(5, 3, 1, 650, 1, 35);
 
 -- ========================================
 -- 3.3 插入技能数据 (关键！is_online=1 才会显示)
 -- ========================================
-INSERT INTO `skills` (`skill_id`, `user_id`, `skill_name`, `skill_type`, `cover_image`, `description`, `price`, `price_unit`, `is_online`, `rating`, `review_count`, `order_count`, `game_name`, `game_rank`) VALUES
+INSERT INTO `skills` (`skill_id`, `user_id`, `skill_name`, `skill_type`, `cover_image`, `description`, `price`, `price_unit`, `is_online`, `rating`, `review_count`, `order_count`, `game_name`, `game_rank`, `peak_score`) VALUES
 -- 用户1的技能 (2个)
-(1, 1, '王者荣耀陪玩', 'online', 'https://cdn.example.com/skill/wzry.png', '王者荣耀王者段位，可带上分、娱乐局', 30.00, '局', 1, 4.85, 120, 45, '王者荣耀', '王者'),
-(2, 1, 'LOL陪玩', 'online', 'https://cdn.example.com/skill/lol.png', '英雄联盟钻石段位，擅长打野和中单', 25.00, '局', 1, 4.70, 85, 30, '英雄联盟', '钻石'),
+(1, 1, '王者荣耀陪玩', 'online', 'https://cdn.example.com/skill/wzry.png', '王者荣耀王者段位，可带上分、娱乐局', 30.00, '局', 1, 4.85, 120, 45, '王者荣耀', '荣耀王者', 2680),
+(2, 1, 'LOL陪玩', 'online', 'https://cdn.example.com/skill/lol.png', '英雄联盟钻石段位，擅长打野和中单', 25.00, '局', 1, 4.70, 85, 30, '英雄联盟', '钻石', NULL),
 -- 用户2的技能
-(3, 2, '语音聊天', 'online', 'https://cdn.example.com/skill/chat.png', '甜美声音陪聊，解忧树洞，倾听你的故事', 50.00, '小时', 1, 4.95, 200, 120, NULL, NULL),
+(3, 2, '语音聊天', 'online', 'https://cdn.example.com/skill/chat.png', '甜美声音陪聊，解忧树洞，倾听你的故事', 50.00, '小时', 1, 4.95, 200, 120, NULL, NULL, NULL),
 -- 用户3的技能 (2个)
-(4, 3, 'LOL上分', 'online', 'https://cdn.example.com/skill/lol2.png', 'LOL钻石选手，专业带上分，不上分退款', 35.00, '局', 1, 4.80, 150, 78, '英雄联盟', '钻石'),
-(5, 3, '和平精英陪玩', 'online', 'https://cdn.example.com/skill/pubg.png', '和平精英王牌选手，带你吃鸡', 28.00, '局', 1, 4.65, 60, 25, '和平精英', '王牌'),
+(4, 3, 'LOL上分', 'online', 'https://cdn.example.com/skill/lol2.png', 'LOL钻石选手，专业带上分，不上分退款', 35.00, '局', 1, 4.80, 150, 78, '英雄联盟', '钻石', NULL),
+(5, 3, '和平精英陪玩', 'online', 'https://cdn.example.com/skill/pubg.png', '和平精英王牌选手，带你吃鸡', 28.00, '局', 1, 4.65, 60, 25, '和平精英', '王牌', NULL),
 -- 用户4的技能
-(6, 4, '电竞教学', 'online', 'https://cdn.example.com/skill/teach.png', '前职业选手，一对一指导，快速提升', 100.00, '小时', 1, 4.98, 300, 200, '英雄联盟', '超凡大师'),
+(6, 4, '电竞教学', 'online', 'https://cdn.example.com/skill/teach.png', '前职业选手，一对一指导，快速提升', 100.00, '小时', 1, 4.98, 300, 200, '英雄联盟', '超凡大师', NULL),
 -- 用户5的技能
-(7, 5, '治愈聊天', 'online', 'https://cdn.example.com/skill/heal.png', '温柔声线，治愈系陪伴，驱散你的烦恼', 40.00, '小时', 1, 4.75, 80, 35, NULL, NULL);
+(7, 5, '治愈聊天', 'online', 'https://cdn.example.com/skill/heal.png', '温柔声线，治愈系陪伴，驱散你的烦恼', 40.00, '小时', 1, 4.75, 80, 35, NULL, NULL, NULL);
 
 -- ========================================
 -- 3.4 插入技能展示图片
@@ -699,15 +706,49 @@ INSERT INTO `skill_rank_config` (`skill_config_id`, `server`, `rank_name`, `sort
 (4, 'default', '传奇', 4, 1);
 
 -- ========================================
+-- 3.10 插入用户关注关系数据（对应粉丝与关注页UI文档）
+-- 用于测试: following/followed/mutual/none 四种状态
+-- ========================================
+INSERT INTO `user_relations` (`follower_id`, `following_id`, `status`, `created_at`) VALUES
+-- 用户1 ↔ 用户2: 互相关注 (mutual)
+(1, 2, 'active', DATE_SUB(NOW(), INTERVAL 30 DAY)),
+(2, 1, 'active', DATE_SUB(NOW(), INTERVAL 28 DAY)),
+-- 用户1 ↔ 用户3: 互相关注 (mutual)
+(1, 3, 'active', DATE_SUB(NOW(), INTERVAL 20 DAY)),
+(3, 1, 'active', DATE_SUB(NOW(), INTERVAL 18 DAY)),
+-- 用户1 → 用户4: 单向关注 (用户1关注用户4，用户4未回关)
+(1, 4, 'active', DATE_SUB(NOW(), INTERVAL 15 DAY)),
+-- 用户5 → 用户1: 单向关注 (用户5关注用户1，用户1未回关)
+-- 从用户1视角: 用户5是粉丝(followed)
+(5, 1, 'active', DATE_SUB(NOW(), INTERVAL 10 DAY)),
+-- 用户2 ↔ 用户4: 互相关注 (mutual)
+(2, 4, 'active', DATE_SUB(NOW(), INTERVAL 25 DAY)),
+(4, 2, 'active', DATE_SUB(NOW(), INTERVAL 24 DAY)),
+-- 用户2 → 用户3: 单向关注
+(2, 3, 'active', DATE_SUB(NOW(), INTERVAL 22 DAY)),
+-- 用户3 → 用户4: 单向关注
+(3, 4, 'active', DATE_SUB(NOW(), INTERVAL 12 DAY)),
+-- 用户4 → 用户5: 单向关注
+(4, 5, 'active', DATE_SUB(NOW(), INTERVAL 8 DAY)),
+-- 用户5 → 用户2: 单向关注
+(5, 2, 'active', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+-- 用户5 → 用户3: 单向关注
+(5, 3, 'active', DATE_SUB(NOW(), INTERVAL 3 DAY));
+
+-- ========================================
 -- Step 4: Verification
 -- ========================================
 SELECT '✅ Database created successfully!' AS status;
-SELECT 'Database: xypai_user (v1.0.4)' AS info;
+SELECT 'Database: xypai_user (v1.0.8)' AS info;
 SELECT COUNT(*) AS table_count FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'xypai_user';
 
 -- Verify new skill config tables
 SELECT '技能配置表' AS table_name, COUNT(*) AS count FROM skill_config;
 SELECT '段位配置表' AS table_name, COUNT(*) AS count FROM skill_rank_config;
+
+-- Verify user relations (粉丝与关注页测试数据)
+SELECT '用户关系表' AS table_name, COUNT(*) AS count FROM user_relations;
+SELECT '关系状态分布' AS info, follower_id, COUNT(*) AS following_count FROM user_relations GROUP BY follower_id;
 
 -- Show all tables
 SHOW TABLES;

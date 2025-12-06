@@ -21,8 +21,8 @@ public class ServiceCardVO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Schema(description = "服务ID")
-    private Long serviceId;
+    @Schema(description = "技能ID (skills.skill_id)")
+    private Long skillId;
 
     @Schema(description = "服务提供者信息")
     private ProviderBriefVO provider;
@@ -99,6 +99,9 @@ public class ServiceCardVO implements Serializable {
 
         @Schema(description = "段位分数")
         private Integer rankScore;
+
+        @Schema(description = "巅峰分（王者荣耀专用）")
+        private Integer peakScore;
 
         @Schema(description = "擅长位置")
         private List<String> position;

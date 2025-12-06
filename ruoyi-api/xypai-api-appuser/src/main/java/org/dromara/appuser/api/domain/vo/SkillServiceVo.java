@@ -95,6 +95,11 @@ public class SkillServiceVo implements Serializable {
     private Integer rankScore;
 
     /**
+     * 巅峰分（王者荣耀专用，如：2680）
+     */
+    private Integer peakScore;
+
+    /**
      * 位置/英雄 (如: ["打野", "中路"])
      */
     private List<String> positions;

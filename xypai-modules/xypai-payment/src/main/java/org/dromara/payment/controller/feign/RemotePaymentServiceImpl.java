@@ -111,4 +111,31 @@ public class RemotePaymentServiceImpl implements RemotePaymentService {
             return BigDecimal.ZERO;
         }
     }
+
+    @Override
+    public boolean verifyPaymentPassword(Long userId, String password) throws ServiceException {
+        log.info("RPC调用 - 验证支付密码: userId={}", userId);
+
+        try {
+            return accountService.verifyPaymentPassword(userId, password);
+        } catch (ServiceException e) {
+            log.warn("支付密码验证失败: userId={}, reason={}", userId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("支付密码验证异常: userId={}", userId, e);
+            throw new ServiceException("支付密码验证失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean hasPaymentPassword(Long userId) {
+        log.info("RPC调用 - 检查支付密码: userId={}", userId);
+
+        try {
+            return accountService.hasPaymentPassword(userId);
+        } catch (Exception e) {
+            log.error("检查支付密码异常: userId={}", userId, e);
+            return false;
+        }
+    }
 }

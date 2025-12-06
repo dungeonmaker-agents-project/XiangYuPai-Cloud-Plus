@@ -30,12 +30,18 @@ import org.dromara.user.domain.entity.User;
 import org.dromara.user.domain.entity.UserRelation;
 import org.dromara.user.domain.entity.UserStats;
 import org.dromara.user.domain.entity.Skill;
+import org.dromara.user.domain.entity.SkillImage;
+import org.dromara.user.domain.entity.SkillPromise;
+import org.dromara.user.domain.entity.SkillAvailableTime;
 import org.dromara.user.domain.entity.WechatUnlock;
 import org.dromara.user.domain.entity.WechatUnlockConfig;
 import org.dromara.user.mapper.UserMapper;
 import org.dromara.user.mapper.UserRelationMapper;
 import org.dromara.user.mapper.UserStatsMapper;
 import org.dromara.user.mapper.SkillMapper;
+import org.dromara.user.mapper.SkillImageMapper;
+import org.dromara.user.mapper.SkillPromiseMapper;
+import org.dromara.user.mapper.SkillAvailableTimeMapper;
 import org.dromara.user.mapper.WechatUnlockMapper;
 import org.dromara.user.mapper.WechatUnlockConfigMapper;
 import org.dromara.user.service.IUserService;
@@ -74,6 +80,9 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
     private final UserRelationMapper userRelationMapper;
     private final UserStatsMapper userStatsMapper;
     private final SkillMapper skillMapper;
+    private final SkillImageMapper skillImageMapper;
+    private final SkillPromiseMapper skillPromiseMapper;
+    private final SkillAvailableTimeMapper skillAvailableTimeMapper;
     private final WechatUnlockMapper wechatUnlockMapper;
     private final WechatUnlockConfigMapper wechatUnlockConfigMapper;
 
@@ -390,43 +399,389 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
 
     // ==================== 技能服务相关 ====================
 
+    /**
+     * 查询技能服务列表（王者荣耀陪玩）
+     * 调用场景：BFF层获取陪玩列表
+     * 核心逻辑：
+     *   1. 解析查询参数（分页、筛选、排序）
+     *   2. 调用Mapper查询技能+用户联合数据
+     *   3. 转换为VO并构建筛选配置
+     *   4. 构建Tab统计信息
+     * 内部函数：buildSkillServiceVoFromMap, buildFilterConfig, buildTabInfoList, parsePriceRange, calculateAge
+     * 外部函数：skillMapper.querySkillServiceListWithUser, skillMapper.countSkillServiceList
+     */
     @Override
     public SkillServicePageResult querySkillServiceList(SkillServiceQueryDto queryDto) {
-        // TODO: 实现技能服务列表查询
-        // 1. 从 skills 表查询技能列表
-        // 2. JOIN users 表获取用户信息
-        // 3. 应用筛选条件 (性别、状态、游戏大区、段位、价格等)
-        // 4. 应用排序 (智能排序、价格、评分、订单数)
-        // 5. 构建筛选配置和Tab统计
-        // 6. 返回分页结果
+        // 参数默认值处理
+        String gameName = queryDto.getSkillType();
+        String tabType = queryDto.getTabType() != null ? queryDto.getTabType() : "glory_king";
+        String sortBy = queryDto.getSortBy() != null ? queryDto.getSortBy() : "smart";
+        int pageNum = queryDto.getPageNum() != null ? queryDto.getPageNum() : 1;
+        int pageSize = queryDto.getPageSize() != null ? queryDto.getPageSize() : 20;
+        int offset = (pageNum - 1) * pageSize;
 
-        // 临时返回空结果，避免编译错误
+        // 解析筛选条件
+        String gender = queryDto.getGender();
+        Integer isOnline = "online".equals(queryDto.getStatus()) ? 1 : null;
+        String server = queryDto.getGameArea();
+        List<String> ranks = queryDto.getRanks();
+
+        // 解析价格区间
+        BigDecimal priceMin = null, priceMax = null;
+        if (queryDto.getPriceRanges() != null && !queryDto.getPriceRanges().isEmpty()) {
+            BigDecimal[] priceRange = parsePriceRange(queryDto.getPriceRanges());
+            priceMin = priceRange[0];
+            priceMax = priceRange[1];
+        }
+
+        // 查询数据
+        List<Map<String, Object>> dataList = skillMapper.querySkillServiceListWithUser(
+            gameName, tabType, sortBy, gender, isOnline, server, ranks, priceMin, priceMax, offset, pageSize
+        );
+
+        // 查询总数
+        Long total = skillMapper.countSkillServiceList(gameName, gender, isOnline, server, ranks, priceMin, priceMax);
+
+        // 转换为VO
+        List<SkillServiceVo> voList = dataList.stream()
+            .map(this::buildSkillServiceVoFromMap)
+            .collect(Collectors.toList());
+
+        // 构建结果
+        boolean hasMore = (pageNum * pageSize) < total;
+
         return SkillServicePageResult.builder()
             .skillType(SkillServicePageResult.SkillTypeInfo.builder()
-                .type(queryDto.getSkillType())
-                .label(queryDto.getSkillType())
+                .type(gameName)
+                .label(gameName)
                 .build())
-            .tabs(new ArrayList<>())
-            .filters(SkillServicePageResult.FilterConfig.builder().build())
-            .list(new ArrayList<>())
-            .total(0L)
-            .hasMore(false)
+            .tabs(buildTabInfoList(gameName))
+            .filters(buildFilterConfig())
+            .list(voList)
+            .total(total)
+            .hasMore(hasMore)
             .build();
     }
 
+    /**
+     * 从Map构建SkillServiceVo
+     * 调用场景：querySkillServiceList内部转换
+     * 核心逻辑：将SQL查询结果Map转换为VO对象
+     */
+    private SkillServiceVo buildSkillServiceVoFromMap(Map<String, Object> data) {
+        // 计算年龄
+        Integer age = null;
+        Object birthday = data.get("birthday");
+        if (birthday instanceof LocalDate) {
+            age = calculateAge((LocalDate) birthday);
+        }
+
+        // 构建价格显示
+        BigDecimal price = data.get("price") != null ? new BigDecimal(data.get("price").toString()) : BigDecimal.ZERO;
+        String priceUnit = (String) data.get("price_unit");
+        String priceDisplay = price.stripTrailingZeros().toPlainString() + " 金币/" + (priceUnit != null ? priceUnit : "局");
+
+        return SkillServiceVo.builder()
+            .skillId(getLongValue(data, "skill_id"))
+            .userId(getLongValue(data, "user_id"))
+            .nickname((String) data.get("nickname"))
+            .avatar((String) data.get("avatar"))
+            .gender((String) data.get("gender"))
+            .age(age)
+            .isOnline(getBoolValue(data, "user_is_online"))
+            .isVerified(getBoolValue(data, "is_real_verified") || getBoolValue(data, "is_god_verified"))
+            .skillType((String) data.get("skill_type"))
+            .skillTypeName((String) data.get("game_name"))
+            .gameArea((String) data.get("server"))
+            .rank((String) data.get("game_rank"))
+            .peakScore(getIntValue(data, "peak_score"))
+            .price(price)
+            .priceUnit(priceUnit)
+            .priceDisplay(priceDisplay)
+            .description((String) data.get("description"))
+            .orderCount(getIntValue(data, "order_count") != null ? getIntValue(data, "order_count") : 0)
+            .rating(data.get("rating") != null ? new BigDecimal(data.get("rating").toString()) : new BigDecimal("5.0"))
+            .reviewCount(getIntValue(data, "review_count") != null ? getIntValue(data, "review_count") : 0)
+            .build();
+    }
+
+    /**
+     * 构建筛选配置
+     * 调用场景：querySkillServiceList构建FilterConfig
+     * 核心逻辑：返回王者荣耀陪玩列表的筛选选项配置
+     */
+    private SkillServicePageResult.FilterConfig buildFilterConfig() {
+        return SkillServicePageResult.FilterConfig.builder()
+            .sortOptions(List.of(
+                SkillServicePageResult.OptionInfo.builder().value("smart").label("智能排序").build(),
+                SkillServicePageResult.OptionInfo.builder().value("newest").label("最新发布").build(),
+                SkillServicePageResult.OptionInfo.builder().value("recent").label("最近活跃").build(),
+                SkillServicePageResult.OptionInfo.builder().value("popular").label("热门推荐").build(),
+                SkillServicePageResult.OptionInfo.builder().value("price_asc").label("价格最低").build(),
+                SkillServicePageResult.OptionInfo.builder().value("price_desc").label("价格最高").build()
+            ))
+            .genderOptions(List.of(
+                SkillServicePageResult.OptionInfo.builder().value("all").label("不限").build(),
+                SkillServicePageResult.OptionInfo.builder().value("male").label("男").build(),
+                SkillServicePageResult.OptionInfo.builder().value("female").label("女").build()
+            ))
+            .statusOptions(List.of(
+                SkillServicePageResult.OptionInfo.builder().value("all").label("不限").build(),
+                SkillServicePageResult.OptionInfo.builder().value("online").label("在线").build()
+            ))
+            .gameAreas(List.of(
+                SkillServicePageResult.OptionInfo.builder().value("微信区").label("微信区").build(),
+                SkillServicePageResult.OptionInfo.builder().value("QQ区").label("QQ区").build()
+            ))
+            .ranks(List.of(
+                SkillServicePageResult.OptionInfo.builder().value("荣耀王者").label("荣耀王者").build(),
+                SkillServicePageResult.OptionInfo.builder().value("超凡大师").label("超凡大师").build(),
+                SkillServicePageResult.OptionInfo.builder().value("无双王者").label("无双王者").build(),
+                SkillServicePageResult.OptionInfo.builder().value("星耀").label("星耀").build(),
+                SkillServicePageResult.OptionInfo.builder().value("钻石").label("钻石").build()
+            ))
+            .priceRanges(List.of(
+                SkillServicePageResult.PriceRangeInfo.builder().value("0-10").label("0-10金币").min(BigDecimal.ZERO).max(BigDecimal.TEN).build(),
+                SkillServicePageResult.PriceRangeInfo.builder().value("10-30").label("10-30金币").min(BigDecimal.TEN).max(new BigDecimal("30")).build(),
+                SkillServicePageResult.PriceRangeInfo.builder().value("30-50").label("30-50金币").min(new BigDecimal("30")).max(new BigDecimal("50")).build(),
+                SkillServicePageResult.PriceRangeInfo.builder().value("50+").label("50金币以上").min(new BigDecimal("50")).max(null).build()
+            ))
+            .build();
+    }
+
+    /**
+     * 构建Tab列表
+     * 调用场景：querySkillServiceList构建Tab统计
+     * 核心逻辑：查询各Tab对应数量
+     */
+    private List<SkillServicePageResult.TabInfo> buildTabInfoList(String gameName) {
+        Long totalCount = skillMapper.countByGameName(gameName);
+        Long onlineCount = skillMapper.countOnlineByGameName(gameName);
+        return List.of(
+            SkillServicePageResult.TabInfo.builder().value("glory_king").label("荣耀王者").count(totalCount.intValue()).build(),
+            SkillServicePageResult.TabInfo.builder().value("online").label("在线").count(onlineCount.intValue()).build()
+        );
+    }
+
+    /**
+     * 解析价格区间
+     * 调用场景：querySkillServiceList解析priceRanges参数
+     * 核心逻辑：合并多个价格区间为最小值和最大值
+     */
+    private BigDecimal[] parsePriceRange(List<String> priceRanges) {
+        BigDecimal min = null, max = null;
+        for (String range : priceRanges) {
+            if (range.endsWith("+")) {
+                BigDecimal rangeMin = new BigDecimal(range.replace("+", ""));
+                if (min == null || rangeMin.compareTo(min) < 0) min = rangeMin;
+            } else if (range.contains("-")) {
+                String[] parts = range.split("-");
+                BigDecimal rangeMin = new BigDecimal(parts[0]);
+                BigDecimal rangeMax = new BigDecimal(parts[1]);
+                if (min == null || rangeMin.compareTo(min) < 0) min = rangeMin;
+                if (max == null || rangeMax.compareTo(max) > 0) max = rangeMax;
+            }
+        }
+        return new BigDecimal[]{min, max};
+    }
+
+    /**
+     * 计算年龄
+     */
+    private Integer calculateAge(LocalDate birthday) {
+        if (birthday == null) return null;
+        return Period.between(birthday, LocalDate.now()).getYears();
+    }
+
+    /**
+     * 从Map获取Long值（工具方法）
+     */
+    private Long getLongValue(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        if (val == null) return null;
+        if (val instanceof Long) return (Long) val;
+        return Long.parseLong(val.toString());
+    }
+
+    /**
+     * 从Map获取Integer值（工具方法）
+     */
+    private Integer getIntValue(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        if (val == null) return null;
+        if (val instanceof Integer) return (Integer) val;
+        return Integer.parseInt(val.toString());
+    }
+
+    /**
+     * 从Map获取Boolean值（工具方法）
+     */
+    private Boolean getBoolValue(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        if (val == null) return false;
+        if (val instanceof Boolean) return (Boolean) val;
+        if (val instanceof Number) return ((Number) val).intValue() == 1;
+        return Boolean.parseBoolean(val.toString());
+    }
+
+    /**
+     * 获取技能服务详情
+     * Invocation: BFF layer calls this for service detail page
+     * Core Logic:
+     *   1. Query skill + user info from database
+     *   2. Query skill images, promises, available times
+     *   3. Build complete SkillServiceDetailVo
+     * Internal: buildSkillDetailVoFromMap, buildProviderDetailVo, buildScheduleInfo
+     * External: skillMapper.selectSkillDetailWithUser, skillImageMapper.selectBySkillId
+     */
     @Override
     public SkillServiceDetailVo getSkillServiceDetail(Long skillId, Long userId) {
-        // TODO: 实现技能服务详情查询
-        // 1. 从 skills 表查询技能基本信息
-        // 2. JOIN users 表获取服务提供者信息
-        // 3. 查询技能图片 (skill_images 表)
-        // 4. 查询技能承诺 (skill_promises 表)
-        // 5. 查询可用时间 (skill_available_times 表)
-        // 6. 查询评价摘要和最近评价
-        // 7. 返回完整详情
+        log.info("查询技能服务详情: skillId={}, userId={}", skillId, userId);
 
-        // 临时返回null，避免编译错误
-        return null;
+        // 1. Query skill + user info
+        Map<String, Object> data = skillMapper.selectSkillDetailWithUser(skillId);
+        if (data == null || data.isEmpty()) {
+            log.warn("技能不存在: skillId={}", skillId);
+            return null;
+        }
+
+        // 2. Query skill images
+        List<SkillImage> images = skillImageMapper.selectBySkillId(skillId);
+        List<String> imageUrls = images.stream()
+            .map(SkillImage::getImageUrl)
+            .collect(Collectors.toList());
+
+        // 3. Query skill promises (for tags)
+        List<SkillPromise> promises = skillPromiseMapper.selectBySkillId(skillId);
+        List<SkillServiceVo.SkillTagVo> tags = promises.stream()
+            .map(p -> SkillServiceVo.SkillTagVo.builder()
+                .text(p.getPromiseText())
+                .type("promise")
+                .color("#FF6B9D")
+                .build())
+            .collect(Collectors.toList());
+
+        // 4. Query available times (for schedule)
+        List<SkillAvailableTime> availableTimes = skillAvailableTimeMapper.selectBySkillId(skillId);
+        String scheduleText = buildScheduleText(availableTimes);
+
+        // 5. Build provider info
+        Integer age = null;
+        Object birthday = data.get("birthday");
+        if (birthday instanceof LocalDate) {
+            age = calculateAge((LocalDate) birthday);
+        }
+
+        boolean isRealVerified = getBoolValue(data, "is_real_verified");
+        boolean isGodVerified = getBoolValue(data, "is_god_verified");
+
+        List<String> certifications = new ArrayList<>();
+        if (isRealVerified) certifications.add("实名认证");
+        if (isGodVerified) certifications.add("大神认证");
+
+        SkillServiceDetailVo.ProviderDetailVo provider = SkillServiceDetailVo.ProviderDetailVo.builder()
+            .userId(getLongValue(data, "user_id"))
+            .nickname((String) data.get("nickname"))
+            .avatar((String) data.get("avatar"))
+            .gender((String) data.get("gender"))
+            .age(age)
+            .isOnline(getBoolValue(data, "user_is_online"))
+            .isVerified(isRealVerified || isGodVerified)
+            .level(getIntValue(data, "level"))
+            .certifications(certifications)
+            .build();
+
+        // 6. Build skill info
+        SkillServiceDetailVo.SkillDetailInfo skillInfo = SkillServiceDetailVo.SkillDetailInfo.builder()
+            .skillType((String) data.get("skill_type"))
+            .skillLabel((String) data.get("game_name"))
+            .gameArea((String) data.get("server"))
+            .rank((String) data.get("game_rank"))
+            .rankScore(getIntValue(data, "peak_score"))
+            .rankDisplay((String) data.get("game_rank"))
+            .build();
+
+        // 7. Build price info
+        BigDecimal price = data.get("price") != null ? new BigDecimal(data.get("price").toString()) : BigDecimal.ZERO;
+        String priceUnit = (String) data.get("price_unit");
+        String priceDisplay = price.stripTrailingZeros().toPlainString() + " 金币/" + (priceUnit != null ? priceUnit : "局");
+
+        SkillServiceDetailVo.PriceInfo priceInfo = SkillServiceDetailVo.PriceInfo.builder()
+            .amount(price)
+            .unit(priceUnit)
+            .displayText(priceDisplay)
+            .build();
+
+        // 8. Build stats info
+        SkillServiceDetailVo.StatsInfo stats = SkillServiceDetailVo.StatsInfo.builder()
+            .orders(getIntValue(data, "order_count"))
+            .rating(data.get("rating") != null ? new BigDecimal(data.get("rating").toString()) : BigDecimal.ZERO)
+            .reviewCount(getIntValue(data, "review_count"))
+            .build();
+
+        // 9. Build schedule info
+        SkillServiceDetailVo.ScheduleInfo schedule = SkillServiceDetailVo.ScheduleInfo.builder()
+            .available(scheduleText)
+            .build();
+
+        // 10. Build location info (for offline skills)
+        SkillServiceDetailVo.LocationInfo location = null;
+        if ("offline".equals(data.get("skill_type"))) {
+            location = SkillServiceDetailVo.LocationInfo.builder()
+                .address((String) data.get("service_location"))
+                .district((String) data.get("residence"))
+                .build();
+        }
+
+        // 11. Build reviews placeholder (basic info)
+        SkillServiceDetailVo.ReviewsInfo reviews = SkillServiceDetailVo.ReviewsInfo.builder()
+            .total(getIntValue(data, "review_count"))
+            .summary(SkillServiceDetailVo.ReviewSummaryVo.builder()
+                .excellent(0)
+                .positive(getIntValue(data, "review_count"))
+                .negative(0)
+                .build())
+            .tags(new ArrayList<>())
+            .recent(new ArrayList<>())
+            .build();
+
+        // 12. Build complete VO
+        String coverImage = (String) data.get("cover_image");
+        return SkillServiceDetailVo.builder()
+            .skillId(skillId)
+            .bannerImage(coverImage)
+            .images(imageUrls.isEmpty() ? (coverImage != null ? List.of(coverImage) : new ArrayList<>()) : imageUrls)
+            .provider(provider)
+            .skillInfo(skillInfo)
+            .tags(tags)
+            .description((String) data.get("description"))
+            .price(priceInfo)
+            .schedule(schedule)
+            .location(location)
+            .stats(stats)
+            .reviews(reviews)
+            .isAvailable(getBoolValue(data, "skill_is_online"))
+            .unavailableReason(getBoolValue(data, "skill_is_online") ? null : "该技能已下架")
+            .build();
+    }
+
+    /**
+     * Build schedule text from available times
+     * Core Logic: Combine day-of-week and time range into display text
+     */
+    private String buildScheduleText(List<SkillAvailableTime> availableTimes) {
+        if (availableTimes == null || availableTimes.isEmpty()) {
+            return "随时可约";
+        }
+        String[] dayNames = {"周日", "周一", "周二", "周三", "周四", "周五", "周六"};
+        StringBuilder sb = new StringBuilder();
+        for (SkillAvailableTime at : availableTimes) {
+            // All records in database are enabled (filtered by deleted=0 in query)
+            if (!sb.isEmpty()) sb.append("、");
+            int day = at.getDayOfWeek() != null ? at.getDayOfWeek() : 0;
+            sb.append(dayNames[day % 7]);
+        }
+        return sb.isEmpty() ? "随时可约" : sb.toString();
     }
 
     @Override
@@ -778,21 +1133,34 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
 
     @Override
     public UserSkillsPageResult getUserSkillsList(Long targetUserId, Long currentUserId, Integer pageNum, Integer pageSize) {
-        // 1. 计算分页偏移
+        // 1. 查询技能提供者信息
+        User provider = userService.getById(targetUserId);
+        if (provider == null) {
+            log.warn("技能提供者不存在: targetUserId={}", targetUserId);
+            return UserSkillsPageResult.builder()
+                .list(new ArrayList<>())
+                .total(0L)
+                .hasMore(false)
+                .pageNum(pageNum)
+                .pageSize(pageSize)
+                .build();
+        }
+
+        // 2. 计算分页偏移
         int offset = (pageNum - 1) * pageSize;
 
-        // 2. 查询用户技能列表
+        // 3. 查询用户技能列表
         List<Skill> skills = skillMapper.selectSkillsByUserId(targetUserId, offset, pageSize);
 
-        // 3. 统计总数
+        // 4. 统计总数
         long total = skillMapper.countSkillsByUserId(targetUserId);
 
-        // 4. 转换为VO
+        // 5. 转换为VO（包含提供者信息）
         List<UserSkillVo> skillVos = skills.stream()
-            .map(this::convertToUserSkillVo)
+            .map(skill -> convertToUserSkillVo(skill, provider))
             .collect(Collectors.toList());
 
-        // 5. 构建返回结果
+        // 6. 构建返回结果
         return UserSkillsPageResult.builder()
             .list(skillVos)
             .total(total)
@@ -1012,9 +1380,9 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
     }
 
     /**
-     * 转换技能为VO
+     * 转换技能为VO（包含提供者信息）
      */
-    private UserSkillVo convertToUserSkillVo(Skill skill) {
+    private UserSkillVo convertToUserSkillVo(Skill skill, User provider) {
         return UserSkillVo.builder()
             .skillId(skill.getSkillId())
             .skillName(skill.getSkillName())
@@ -1023,6 +1391,11 @@ public class RemoteAppUserServiceImpl implements RemoteAppUserService {
             .description(skill.getDescription())
             .mediaData(UserSkillVo.MediaData.builder()
                 .coverUrl(skill.getCoverImage())
+                .build())
+            .providerData(UserSkillVo.ProviderData.builder()
+                .userId(provider.getUserId())
+                .nickname(provider.getNickname())
+                .avatar(provider.getAvatar())
                 .build())
             .skillInfo(UserSkillVo.SkillInfo.builder()
                 .gameName(skill.getGameName())

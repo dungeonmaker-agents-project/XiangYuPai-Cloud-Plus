@@ -112,6 +112,20 @@
             <version>${revision}</version>
         </dependency>
 
+        <!-- Payment API (for RPC calls to xypai-payment service) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-payment</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- Order API (for RPC calls to xypai-order service) -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api-order</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
         <!-- Test Dependencies -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

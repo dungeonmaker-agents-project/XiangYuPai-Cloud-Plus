@@ -1,5 +1,7 @@
 package org.dromara.order.service;
 
+import org.dromara.order.api.domain.CreateOrderRequest;
+import org.dromara.order.api.domain.CreateOrderResult;
 import org.dromara.order.domain.dto.*;
 import org.dromara.order.domain.vo.*;
 
@@ -80,4 +82,15 @@ public interface IOrderService {
      * @return 订单数量
      */
     Long getOrderCount(Long userId, Long providerId, String status);
+
+    /**
+     * 创建订单并支付（RPC调用，无登录态依赖）
+     *
+     * <p>调用方：RemoteOrderServiceImpl</p>
+     * <p>场景：BFF层通过RPC调用创建订单，余额支付时同步扣款</p>
+     *
+     * @param request 创建订单请求
+     * @return 订单创建结果
+     */
+    CreateOrderResult createOrderByRpc(CreateOrderRequest request);
 }

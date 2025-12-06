@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.order.api.RemoteOrderService;
+import org.dromara.order.api.domain.CreateOrderRequest;
+import org.dromara.order.api.domain.CreateOrderResult;
 import org.dromara.order.api.domain.OrderCountRequest;
 import org.dromara.order.api.domain.UpdateOrderStatusRequest;
 import org.dromara.order.service.IOrderService;
@@ -59,6 +61,22 @@ public class RemoteOrderServiceImpl implements RemoteOrderService {
         } catch (Exception e) {
             log.error("获取订单数量失败", e);
             return 0L;
+        }
+    }
+
+    @Override
+    public CreateOrderResult createOrder(CreateOrderRequest request) throws ServiceException {
+        log.info("RPC调用 - 创建订单: userId={}, serviceId={}, amount={}",
+            request.getUserId(), request.getServiceId(), request.getTotalAmount());
+
+        try {
+            return orderService.createOrderByRpc(request);
+        } catch (ServiceException e) {
+            log.error("创建订单失败: userId={}, error={}", request.getUserId(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("创建订单异常: userId={}", request.getUserId(), e);
+            return CreateOrderResult.fail("SYSTEM_ERROR", "系统错误: " + e.getMessage());
         }
     }
 }

@@ -7,9 +7,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.redis.utils.RedisUtils;
+import org.dromara.order.api.domain.CreateOrderRequest;
+import org.dromara.order.api.domain.CreateOrderResult;
 import org.dromara.order.domain.dto.*;
 import org.dromara.order.domain.entity.Order;
 import org.dromara.order.domain.vo.*;
+import org.dromara.payment.api.domain.DeductBalanceRequest;
 import org.dromara.order.mapper.OrderMapper;
 import org.dromara.order.service.IOrderService;
 import org.dromara.payment.api.RemotePaymentService;
@@ -361,6 +364,97 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
 
         return orderMapper.selectCount(wrapper);
+    }
+
+    /**
+     * 创建订单并支付（RPC调用）
+     *
+     * <p>处理流程：参数验证 → 创建订单 → 余额扣款 → 更新状态</p>
+     * <p>事务：订单创建和扣款在同一事务中，失败自动回滚</p>
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public CreateOrderResult createOrderByRpc(CreateOrderRequest request) {
+        log.info("RPC创建订单: userId={}, serviceId={}, quantity={}, amount={}",
+            request.getUserId(), request.getServiceId(), request.getQuantity(), request.getTotalAmount());
+
+        // 1. 参数校验
+        if (request.getUserId() == null || request.getServiceId() == null) {
+            return CreateOrderResult.fail("PARAM_ERROR", "用户ID或服务ID不能为空");
+        }
+        if (request.getQuantity() == null || request.getQuantity() < 1) {
+            return CreateOrderResult.fail("PARAM_ERROR", "数量必须大于0");
+        }
+        if (request.getTotalAmount() == null || request.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            return CreateOrderResult.fail("PARAM_ERROR", "金额必须大于0");
+        }
+
+        // 2. 验证金额（单价 * 数量 = 总额）
+        BigDecimal expectedTotal = request.getUnitPrice().multiply(new BigDecimal(request.getQuantity()));
+        if (expectedTotal.compareTo(request.getTotalAmount()) != 0) {
+            return CreateOrderResult.fail("AMOUNT_MISMATCH", "订单金额验证失败");
+        }
+
+        // 3. 生成订单号
+        String orderNo = generateOrderNo();
+
+        // 4. 创建订单记录
+        Order order = Order.builder()
+            .orderNo(orderNo)
+            .userId(request.getUserId())
+            .providerId(request.getProviderId())
+            .serviceId(request.getServiceId())
+            .orderType("service")
+            .quantity(request.getQuantity())
+            .unitPrice(request.getUnitPrice())
+            .subtotal(request.getTotalAmount())
+            .serviceFee(BigDecimal.ZERO)
+            .totalAmount(request.getTotalAmount())
+            .status("pending")
+            .paymentStatus("pending")
+            .paymentMethod(request.getPaymentMethod())
+            .remark(request.getRemark())
+            .autoCancelTime(LocalDateTime.now().plus(AUTO_CANCEL_DURATION))
+            .build();
+
+        orderMapper.insert(order);
+        log.info("订单创建成功: orderId={}, orderNo={}", order.getId(), orderNo);
+
+        // 5. 余额支付时立即扣款
+        if ("balance".equals(request.getPaymentMethod())) {
+            try {
+                DeductBalanceRequest deductRequest = DeductBalanceRequest.builder()
+                    .userId(request.getUserId())
+                    .amount(request.getTotalAmount())
+                    .reason("订单支付")
+                    .referenceId(order.getId())
+                    .referenceType("order")
+                    .paymentNo(orderNo)
+                    .build();
+
+                boolean deducted = remotePaymentService.deductBalance(deductRequest);
+                if (!deducted) {
+                    log.warn("余额不足: userId={}, amount={}", request.getUserId(), request.getTotalAmount());
+                    return CreateOrderResult.fail("INSUFFICIENT_BALANCE", "余额不足");
+                }
+
+                // 扣款成功，更新订单状态
+                order.setPaymentStatus("success");
+                order.setStatus("accepted");
+                order.setPaymentTime(LocalDateTime.now());
+                orderMapper.updateById(order);
+
+                log.info("订单支付成功: orderId={}, amount={}", order.getId(), request.getTotalAmount());
+                return CreateOrderResult.success(order.getId(), orderNo, request.getTotalAmount(), "success");
+
+            } catch (ServiceException e) {
+                log.error("支付失败: orderId={}, error={}", order.getId(), e.getMessage());
+                return CreateOrderResult.fail("PAYMENT_FAILED", e.getMessage());
+            }
+        }
+
+        // 非余额支付，返回待支付状态
+        return CreateOrderResult.success(order.getId(), orderNo, request.getTotalAmount(), "pending");
     }
 
     /**
